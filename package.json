@@ -1,0 +1,39 @@
+{
+  "name": "formula-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "调香手记 Windows 本地桌面版",
+  "main": "electron/main.cjs",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wait-on http://127.0.0.1:5173 && electron .\"",
+    "build": "tsc --noEmit && vite build",
+    "dist": "npm run build && electron-builder --win nsis portable",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.19",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.2",
+    "concurrently": "9.2.1",
+    "electron": "37.2.6",
+    "electron-builder": "26.0.12",
+    "typescript": "5.9.3",
+    "vite": "8.0.13",
+    "wait-on": "8.0.4"
+  },
+  "build": {
+    "appId": "studio.formula.desktop",
+    "productName": "调香手记",
+    "directories": { "output": "release" },
+    "files": ["dist/**/*", "electron/**/*", "package.json"],
+    "win": { "icon": "public/app-icon.png" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true },
+    "portable": { "artifactName": "FormulaStudio-Portable-${version}.exe" }
+  }
+}
