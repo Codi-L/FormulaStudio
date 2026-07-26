@@ -39,6 +39,8 @@ export default function StudioClient() {
             const legacy = readGuestStore();
             if (legacy.formulas.length || legacy.materials.length || legacy.groups.length || legacy.settings.length)
                 x = await replaceGuestStore(legacy);
+            else
+                x = await replaceGuestStore({ formulas: [demoFormula], materials: demoMaterials, groups: [], settings: [] });
         }
         const loaded = x as {
             formulas: Formula[];

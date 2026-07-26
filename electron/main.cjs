@@ -6,13 +6,13 @@ const isDev = !app.isPackaged;
 const EMPTY_STORE = { formulas: [], materials: [], groups: [], settings: [] };
 const DATA_FILE = "formula-studio-data.json";
 const PREFERENCES_FILE = "preferences.json";
-const NUTSTORE_URL = "https://dav.jianguoyun.com/dav";
+const NUTSTORE_URL = "https://dav.jianguoyun.com/dav/";
 let writeQueue = Promise.resolve();
 let syncTimer;
 
 const defaultPreferences = () => ({
   dataDirectory: path.join(app.getPath("documents"), "Formula Studio"),
-  nutstore: { enabled: false, username: "", remoteFile: "/FormulaStudio-backup.json", autoSync: true, intervalMinutes: 10 },
+  nutstore: { enabled: false, username: "", remoteFile: "/FormulaStudio/FormulaStudio-backup.json", autoSync: true, intervalMinutes: 10 },
 });
 
 const preferencesPath = () => path.join(app.getPath("userData"), PREFERENCES_FILE);
@@ -47,7 +47,9 @@ function normalizeStore(value) {
 async function readPreferencesInternal() {
   const saved = await readJson(preferencesPath(), {});
   const defaults = defaultPreferences();
-  return { ...defaults, ...saved, nutstore: { ...defaults.nutstore, ...saved.nutstore } };
+  const preferences = { ...defaults, ...saved, nutstore: { ...defaults.nutstore, ...saved.nutstore } };
+  if (preferences.nutstore.remoteFile === "/FormulaStudio-backup.json") preferences.nutstore.remoteFile = defaults.nutstore.remoteFile;
+  return preferences;
 }
 
 async function readStore() {
@@ -73,7 +75,7 @@ function publicPreferences(preferences) {
     nutstore: {
       enabled: Boolean(preferences.nutstore.enabled),
       username: preferences.nutstore.username || "",
-      remoteFile: preferences.nutstore.remoteFile || "/FormulaStudio-backup.json",
+      remoteFile: preferences.nutstore.remoteFile || "/FormulaStudio/FormulaStudio-backup.json",
       autoSync: preferences.nutstore.autoSync !== false,
       intervalMinutes: Number(preferences.nutstore.intervalMinutes) || 10,
       hasPassword: Boolean(preferences.nutstore.password),
@@ -94,26 +96,36 @@ function decryptPassword(value) {
   return safeStorage.decryptString(Buffer.from(value, "base64"));
 }
 
-function remoteUrl(remoteFile) {
-  const cleaned = `/${String(remoteFile || DATA_FILE).replace(/^\/+/, "")}`;
-  return `${NUTSTORE_URL}${cleaned.split("/").map((part, index) => index ? encodeURIComponent(part) : "").join("/")}`;
+function remoteUrl(remoteFile = "") {
+  return `${NUTSTORE_URL}${String(remoteFile).replace(/^\/+/, "").split("/").filter(Boolean).map(encodeURIComponent).join("/")}`;
 }
 
-async function nutstoreRequest(method, preferences, body) {
+async function nutstoreRequest(method, preferences, body, remoteFile = preferences.nutstore.remoteFile, extraHeaders = {}) {
   const password = decryptPassword(preferences.nutstore.password);
   if (!preferences.nutstore.username || !password) throw new Error("请填写坚果云账号和应用密码。");
-  const response = await net.fetch(remoteUrl(preferences.nutstore.remoteFile), {
+  const response = await net.fetch(remoteUrl(remoteFile), {
     method,
     headers: {
       Authorization: `Basic ${Buffer.from(`${preferences.nutstore.username}:${password}`).toString("base64")}`,
       ...(body ? { "Content-Type": "application/json;charset=utf-8" } : {}),
+      ...extraHeaders,
     },
     ...(body ? { body } : {}),
   });
-  if (!response.ok && !(method === "GET" && response.status === 404)) {
+  if (!response.ok && !(method === "GET" && response.status === 404) && !(method === "MKCOL" && response.status === 405)) {
     throw new Error(`坚果云请求失败（HTTP ${response.status}）。`);
   }
   return response;
+}
+
+async function ensureNutstoreFolders(preferences) {
+  const parts = String(preferences.nutstore.remoteFile || "").replace(/^\/+/, "").split("/").filter(Boolean).slice(0, -1);
+  let current = "";
+  for (const part of parts) {
+    current += `/${part}`;
+    const response = await nutstoreRequest("MKCOL", preferences, undefined, current);
+    if (![201, 405].includes(response.status)) throw new Error(`无法创建坚果云同步文件夹（HTTP ${response.status}）。`);
+  }
 }
 
 async function updateSyncStatus(error = "") {
@@ -128,6 +140,7 @@ async function uploadToNutstore() {
   const preferences = await readPreferencesInternal();
   const store = await readStore();
   const envelope = { app: "调香手记", version: 1, exportedAt: new Date().toISOString(), data: store };
+  await ensureNutstoreFolders(preferences);
   await nutstoreRequest("PUT", preferences, JSON.stringify(envelope, null, 2));
   await updateSyncStatus();
   return { direction: "upload", store };
@@ -145,7 +158,11 @@ async function syncWithNutstore() {
     const localEnvelope = await readJson(localFile, null);
     const remoteTime = Date.parse(remoteEnvelope.exportedAt || "") || 0;
     const localTime = Date.parse(localEnvelope?.exportedAt || "") || 0;
-    if (remoteTime > localTime) {
+    const recordCount = store => store.formulas.length + store.materials.length + store.groups.length + store.settings.length;
+    const remoteCount = recordCount(remoteStore);
+    const localStore = normalizeStore(localEnvelope);
+    const localCount = recordCount(localStore);
+    if (remoteCount > 0 && (localCount === 0 || remoteTime > localTime)) {
       await writeStore(remoteStore, { sync: false });
       await updateSyncStatus();
       return { direction: "download", store: remoteStore };
@@ -216,8 +233,8 @@ app.whenReady().then(async () => {
     const current = await readPreferencesInternal();
     const test = { ...current, nutstore: { ...current.nutstore, ...draft } };
     if (draft.password) test.nutstore.password = encryptPassword(draft.password);
-    const response = await nutstoreRequest("GET", test);
-    return { ok: response.ok || response.status === 404 };
+    const response = await nutstoreRequest("PROPFIND", test, undefined, "", { Depth: "0" });
+    return { ok: response.ok || response.status === 207 };
   });
   createWindow();
   const preferences = await readPreferencesInternal();

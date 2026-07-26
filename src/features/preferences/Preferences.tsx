@@ -9,7 +9,7 @@ type Props = {
 const emptyPreferences: DesktopPreferences = {
   dataDirectory: "",
   dataFile: "",
-  nutstore: { enabled: false, username: "", remoteFile: "/FormulaStudio-backup.json", autoSync: true, intervalMinutes: 10, hasPassword: false, lastSyncAt: "", lastSyncError: "" },
+  nutstore: { enabled: false, username: "", remoteFile: "/FormulaStudio/FormulaStudio-backup.json", autoSync: true, intervalMinutes: 10, hasPassword: false, lastSyncAt: "", lastSyncError: "" },
 };
 
 export function Preferences({ onDataReload, onStorageChanged }: Props) {
@@ -76,7 +76,7 @@ export function Preferences({ onDataReload, onStorageChanged }: Props) {
       <div className="preferenceGrid">
         <label><span>坚果云账号（邮箱）</span><input value={preferences.nutstore.username} onChange={e => updateNutstore({ username: e.target.value })} placeholder="name@example.com"/></label>
         <label><span>应用密码</span><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={preferences.nutstore.hasPassword ? "已安全保存；留空表示不更改" : "在坚果云安全选项中生成"}/></label>
-        <label className="wide"><span>云端文件路径</span><input value={preferences.nutstore.remoteFile} onChange={e => updateNutstore({ remoteFile: e.target.value })} placeholder="/FormulaStudio-backup.json"/></label>
+        <label className="wide"><span>云端文件路径</span><input value={preferences.nutstore.remoteFile} onChange={e => updateNutstore({ remoteFile: e.target.value })} placeholder="/FormulaStudio/FormulaStudio-backup.json"/></label>
       </div>
       <label className="check preferenceCheck"><input type="checkbox" checked={preferences.nutstore.autoSync} onChange={e => updateNutstore({ autoSync: e.target.checked })}/><span>本地保存后自动上传，并在启动时检查云端更新</span></label>
       <p className="securityHint">请使用坚果云“账户信息 → 安全选项 → 第三方应用管理”生成的应用密码。密码由操作系统加密保存，不会写入数据备份。</p>
