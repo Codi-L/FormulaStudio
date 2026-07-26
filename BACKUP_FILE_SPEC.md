@@ -30,6 +30,7 @@ A newly exported backup MUST have this shape:
 {
   "app": "调香手记",
   "version": 1,
+  "syncRevision": 12,
   "exportedAt": "2026-07-27T08:30:00.000Z",
   "data": {
     "formulas": [],
@@ -46,6 +47,7 @@ Top-level fields:
 | --- | --- | --- |
 | `app` | string | MUST equal `调香手记`. |
 | `version` | integer | MUST equal `1` for this specification. This is the backup format version, not the app release version. |
+| `syncRevision` | integer | Monotonic synchronization revision ID. Desktop sync exports MUST include it. Legacy version 1 files without it are treated as revision `0`. |
 | `exportedAt` | string | MUST be a valid ISO 8601 UTC timestamp produced by `new Date().toISOString()`. |
 | `data` | object | MUST contain `formulas`, `materials`, `groups`, and `settings`. |
 
@@ -171,6 +173,7 @@ Rules:
 {
   "app": "调香手记",
   "version": 1,
+  "syncRevision": 12,
   "exportedAt": "2026-07-27T08:30:00.000Z",
   "data": {
     "formulas": [
@@ -256,6 +259,7 @@ async function exportBackup(): Promise<void> {
   const envelope = {
     app: "调香手记",
     version: 1,
+    syncRevision: await readCurrentSyncRevision(),
     exportedAt: new Date().toISOString(),
     data: {
       formulas: [...store.formulas],
@@ -286,6 +290,8 @@ async function exportBackup(): Promise<void> {
 ```
 
 `readPersistedStore()` and `flushPendingWrites()` are placeholders that MUST be connected to the Site's actual persistence layer (for example IndexedDB or local storage). Returning hard-coded arrays, demo fixtures, or only the currently visible record is not a valid implementation.
+
+`version` and `syncRevision` MUST NOT be confused. `version` changes only when the backup schema changes. `syncRevision` increases after a local data mutation and is used to detect synchronization conflicts. When the remote revision is higher, the application MUST ask the user whether to preserve the local or remote data before overwriting either copy. Preserving local data MUST assign it a revision greater than the remote revision before upload.
 
 ## 7. Import requirements for the Site version
 

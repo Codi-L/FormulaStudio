@@ -60,6 +60,7 @@ export default function StudioClient() {
     useEffect(() => {
         loadData().catch(() => { });
         window.formulaStudio?.preferences.get().then(setDesktopPreferences).catch(() => {});
+        return window.formulaStudio?.storage.onChanged(() => { loadData().catch(() => {}); });
     }, []);
     const formula = formulas.find(f => f.id === selected) || formulas[0];
     const update = (patch: Partial<Formula>) => { setSaved(false); setSaveError(""); setFormulas(fs => fs.map(f => f.id === formula.id ? { ...f, ...patch } : f)); };
@@ -199,8 +200,8 @@ export default function StudioClient() {
     const scaleRatiosTo100 = () => { if (ratioTotal <= 0 || !ratioUnder) return; const normalized = normalizeBy(formula.ingredients, item => Number(item.ratio) || 0); const ingredients = Object.fromEntries((Object.keys(normalized) as Note[]).map(note => [note, normalized[note].map(item => ({ ...item, amount: +(formula.fragrance * 1000 * item.ratio / 100).toFixed(4) }))])) as Formula["ingredients"]; applyCalculated({ ...formula, ingredients }); };
     const stepIngredient = (note: Note, id: string, direction: 1 | -1) => { if (ratioUnder) return; const step = formula.adjustmentStep ?? 10; const next = { ...formula.ingredients, [note]: formula.ingredients[note].map(i => i.id === id ? { ...i, amount: Math.max(0, +(i.amount + direction * step).toFixed(4)) } : i) }; rebalance(next); };
     const exportGuestBackup = async () => {
-        const persisted = await dataSync("list") as GuestStore;
-        const blob = new Blob([JSON.stringify({ app: "调香手记", version: 1, exportedAt: new Date().toISOString(), data: persisted }, null, 2)], { type: "application/json;charset=utf-8" });
+        const envelope = window.formulaStudio ? await window.formulaStudio.storage.backup() : { app: "调香手记" as const, version: 1 as const, syncRevision: 0, exportedAt: new Date().toISOString(), data: await dataSync("list") as GuestStore };
+        const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: "application/json;charset=utf-8" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;

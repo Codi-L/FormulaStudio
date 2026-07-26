@@ -9,6 +9,7 @@ export type DesktopPreferences = {
     remoteFile: string;
     autoSync: boolean;
     intervalMinutes: number;
+    syncOnSave: boolean;
     hasPassword: boolean;
     lastSyncAt: string;
     lastSyncError: string;
@@ -20,8 +21,10 @@ declare global {
     formulaStudio?: {
       storage: {
         list(): Promise<GuestStore>;
+        backup(): Promise<{ app: "调香手记"; version: 1; syncRevision: number; exportedAt: string; data: GuestStore }>;
         mutate(action: string, payload: unknown): Promise<GuestStore>;
         replace(store: GuestStore): Promise<GuestStore>;
+        onChanged(callback: () => void): () => void;
       };
       preferences: {
         get(): Promise<DesktopPreferences>;
@@ -30,7 +33,7 @@ declare global {
       };
       nutstore: {
         test(settings: unknown): Promise<{ ok: boolean }>;
-        sync(): Promise<{ direction: "upload" | "download"; store: GuestStore }>;
+        sync(): Promise<{ direction: "upload" | "download" | "cancel"; store: GuestStore; syncRevision: number }>;
       };
     };
   }

@@ -3,8 +3,14 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("formulaStudio", {
   storage: {
     list: () => ipcRenderer.invoke("storage:list"),
+    backup: () => ipcRenderer.invoke("storage:backup"),
     mutate: (action, payload) => ipcRenderer.invoke("storage:mutate", action, payload),
     replace: store => ipcRenderer.invoke("storage:replace", store),
+    onChanged: callback => {
+      const listener = () => callback();
+      ipcRenderer.on("storage:changed", listener);
+      return () => ipcRenderer.removeListener("storage:changed", listener);
+    },
   },
   preferences: {
     get: () => ipcRenderer.invoke("preferences:get"),

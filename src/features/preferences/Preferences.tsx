@@ -9,7 +9,7 @@ type Props = {
 const emptyPreferences: DesktopPreferences = {
   dataDirectory: "",
   dataFile: "",
-  nutstore: { enabled: false, username: "", remoteFile: "/FormulaStudio/FormulaStudio-backup.json", autoSync: true, intervalMinutes: 10, hasPassword: false, lastSyncAt: "", lastSyncError: "" },
+  nutstore: { enabled: false, username: "", remoteFile: "/FormulaStudio/FormulaStudio-backup.json", autoSync: true, intervalMinutes: 10, syncOnSave: true, hasPassword: false, lastSyncAt: "", lastSyncError: "" },
 };
 
 export function Preferences({ onDataReload, onStorageChanged }: Props) {
@@ -59,7 +59,7 @@ export function Preferences({ onDataReload, onStorageChanged }: Props) {
       const result = await bridge.nutstore.sync();
       if (result.direction === "download") await onDataReload();
       const latest = await bridge.preferences.get(); setPreferences(latest); onStorageChanged(latest);
-      setStatus(result.direction === "download" ? "已从坚果云下载较新数据。" : "本地数据已上传到坚果云。");
+      setStatus(result.direction === "download" ? `已保留坚果云版本 ID ${result.syncRevision}。` : result.direction === "cancel" ? "已取消同步，本地和云端数据都未更改。" : `已保留本地版本并上传，版本 ID ${result.syncRevision}。`);
     } catch (error) { setStatus(error instanceof Error ? error.message : "同步失败。"); }
     finally { setBusy(false); }
   };
@@ -78,7 +78,11 @@ export function Preferences({ onDataReload, onStorageChanged }: Props) {
         <label><span>应用密码</span><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={preferences.nutstore.hasPassword ? "已安全保存；留空表示不更改" : "在坚果云安全选项中生成"}/></label>
         <label className="wide"><span>云端文件路径</span><input value={preferences.nutstore.remoteFile} onChange={e => updateNutstore({ remoteFile: e.target.value })} placeholder="/FormulaStudio/FormulaStudio-backup.json"/></label>
       </div>
-      <label className="check preferenceCheck"><input type="checkbox" checked={preferences.nutstore.autoSync} onChange={e => updateNutstore({ autoSync: e.target.checked })}/><span>本地保存后自动上传，并在启动时检查云端更新</span></label>
+      <div className="syncOptions">
+        <label className="check preferenceCheck"><input type="checkbox" checked={preferences.nutstore.autoSync} onChange={e => updateNutstore({ autoSync: e.target.checked })}/><span>启用定时自动同步</span></label>
+        <label className="frequencyField"><span>自动同步频率</span><input type="number" min="1" step="1" disabled={!preferences.nutstore.autoSync} value={preferences.nutstore.intervalMinutes} onChange={e => updateNutstore({ intervalMinutes: Math.max(1, Number(e.target.value) || 1) })}/><b>分钟</b></label>
+        <label className="check preferenceCheck"><input type="checkbox" checked={preferences.nutstore.syncOnSave} onChange={e => updateNutstore({ syncOnSave: e.target.checked })}/><span>保存配方、原料、分组或设置后自动同步</span></label>
+      </div>
       <p className="securityHint">请使用坚果云“账户信息 → 安全选项 → 第三方应用管理”生成的应用密码。密码由操作系统加密保存，不会写入数据备份。</p>
       <div className="preferenceActions"><button onClick={test} disabled={busy}>测试连接</button><button onClick={sync} disabled={busy || !preferences.nutstore.enabled}>立即同步</button><button className="primary" onClick={save} disabled={busy}>保存偏好设置</button></div>
       {(status || preferences.nutstore.lastSyncAt || preferences.nutstore.lastSyncError) && <div className={`preferenceStatus ${preferences.nutstore.lastSyncError ? "error" : ""}`}><b>{status || (preferences.nutstore.lastSyncError ? `上次同步失败：${preferences.nutstore.lastSyncError}` : "同步已配置")}</b>{preferences.nutstore.lastSyncAt && <span>上次成功同步：{new Date(preferences.nutstore.lastSyncAt).toLocaleString()}</span>}</div>}
