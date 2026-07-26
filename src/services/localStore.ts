@@ -23,11 +23,22 @@ export function writeGuestStore(store: GuestStore) {
   localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(store));
 }
 
+export async function replaceGuestStore(store: GuestStore): Promise<GuestStore> {
+  if (window.formulaStudio) return window.formulaStudio.storage.replace(store);
+  writeGuestStore(store);
+  return store;
+}
+
 export async function syncLocalStore(action: string, payload: unknown = {}): Promise<any> {
+  if (window.formulaStudio) {
+    if (action === "list") return window.formulaStudio.storage.list();
+    return window.formulaStudio.storage.mutate(action, payload);
+  }
   const store = readGuestStore();
   const body = payload as { kind?: keyof GuestStore; id?: string; record?: { id: string } };
   if (action === "list") return store;
-  const kind = body.kind;
+  const aliases: Record<string, keyof GuestStore> = { formula: "formulas", material: "materials", group: "groups", settings: "settings" };
+  const kind = body.kind ? aliases[body.kind] || body.kind : undefined;
   const mutable = store as unknown as Record<string, Array<{ id: string }>>;
   if (action === "save" && kind && body.record && Array.isArray(mutable[kind])) {
     const records = mutable[kind];

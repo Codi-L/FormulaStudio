@@ -1,35 +1,227 @@
-const { app, BrowserWindow, shell } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, net, safeStorage, shell } = require("electron");
+const fs = require("node:fs/promises");
 const path = require("node:path");
 
 const isDev = !app.isPackaged;
+const EMPTY_STORE = { formulas: [], materials: [], groups: [], settings: [] };
+const DATA_FILE = "formula-studio-data.json";
+const PREFERENCES_FILE = "preferences.json";
+const NUTSTORE_URL = "https://dav.jianguoyun.com/dav";
+let writeQueue = Promise.resolve();
+let syncTimer;
+
+const defaultPreferences = () => ({
+  dataDirectory: path.join(app.getPath("documents"), "Formula Studio"),
+  nutstore: { enabled: false, username: "", remoteFile: "/FormulaStudio-backup.json", autoSync: true, intervalMinutes: 10 },
+});
+
+const preferencesPath = () => path.join(app.getPath("userData"), PREFERENCES_FILE);
+
+async function readJson(file, fallback) {
+  try { return JSON.parse(await fs.readFile(file, "utf8")); }
+  catch (error) { if (error.code === "ENOENT") return fallback; throw error; }
+}
+
+async function writeJsonAtomic(file, value) {
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  const temporary = `${file}.tmp`;
+  await fs.writeFile(temporary, JSON.stringify(value, null, 2), "utf8");
+  try { await fs.rename(temporary, file); }
+  catch (error) {
+    if (!["EEXIST", "EPERM"].includes(error.code)) throw error;
+    await fs.rm(file, { force: true });
+    await fs.rename(temporary, file);
+  }
+}
+
+function normalizeStore(value) {
+  const source = value && typeof value === "object" && value.data ? value.data : value;
+  return {
+    formulas: Array.isArray(source?.formulas) ? source.formulas : [],
+    materials: Array.isArray(source?.materials) ? source.materials : [],
+    groups: Array.isArray(source?.groups) ? source.groups : [],
+    settings: Array.isArray(source?.settings) ? source.settings : [],
+  };
+}
+
+async function readPreferencesInternal() {
+  const saved = await readJson(preferencesPath(), {});
+  const defaults = defaultPreferences();
+  return { ...defaults, ...saved, nutstore: { ...defaults.nutstore, ...saved.nutstore } };
+}
+
+async function readStore() {
+  const preferences = await readPreferencesInternal();
+  return normalizeStore(await readJson(path.join(preferences.dataDirectory, DATA_FILE), EMPTY_STORE));
+}
+
+async function writeStore(store, { sync = true } = {}) {
+  writeQueue = writeQueue.then(async () => {
+    const preferences = await readPreferencesInternal();
+    const envelope = { app: "调香手记", version: 1, exportedAt: new Date().toISOString(), data: normalizeStore(store) };
+    await writeJsonAtomic(path.join(preferences.dataDirectory, DATA_FILE), envelope);
+    if (sync && preferences.nutstore.enabled && preferences.nutstore.autoSync) scheduleCloudUpload();
+    return envelope.data;
+  });
+  return writeQueue;
+}
+
+function publicPreferences(preferences) {
+  return {
+    dataDirectory: preferences.dataDirectory,
+    dataFile: path.join(preferences.dataDirectory, DATA_FILE),
+    nutstore: {
+      enabled: Boolean(preferences.nutstore.enabled),
+      username: preferences.nutstore.username || "",
+      remoteFile: preferences.nutstore.remoteFile || "/FormulaStudio-backup.json",
+      autoSync: preferences.nutstore.autoSync !== false,
+      intervalMinutes: Number(preferences.nutstore.intervalMinutes) || 10,
+      hasPassword: Boolean(preferences.nutstore.password),
+      lastSyncAt: preferences.nutstore.lastSyncAt || "",
+      lastSyncError: preferences.nutstore.lastSyncError || "",
+    },
+  };
+}
+
+function encryptPassword(password) {
+  if (!password) return "";
+  if (!safeStorage.isEncryptionAvailable()) throw new Error("当前系统无法安全保存密码。");
+  return safeStorage.encryptString(password).toString("base64");
+}
+
+function decryptPassword(value) {
+  if (!value) return "";
+  return safeStorage.decryptString(Buffer.from(value, "base64"));
+}
+
+function remoteUrl(remoteFile) {
+  const cleaned = `/${String(remoteFile || DATA_FILE).replace(/^\/+/, "")}`;
+  return `${NUTSTORE_URL}${cleaned.split("/").map((part, index) => index ? encodeURIComponent(part) : "").join("/")}`;
+}
+
+async function nutstoreRequest(method, preferences, body) {
+  const password = decryptPassword(preferences.nutstore.password);
+  if (!preferences.nutstore.username || !password) throw new Error("请填写坚果云账号和应用密码。");
+  const response = await net.fetch(remoteUrl(preferences.nutstore.remoteFile), {
+    method,
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${preferences.nutstore.username}:${password}`).toString("base64")}`,
+      ...(body ? { "Content-Type": "application/json;charset=utf-8" } : {}),
+    },
+    ...(body ? { body } : {}),
+  });
+  if (!response.ok && !(method === "GET" && response.status === 404)) {
+    throw new Error(`坚果云请求失败（HTTP ${response.status}）。`);
+  }
+  return response;
+}
+
+async function updateSyncStatus(error = "") {
+  const preferences = await readPreferencesInternal();
+  preferences.nutstore.lastSyncAt = error ? preferences.nutstore.lastSyncAt || "" : new Date().toISOString();
+  preferences.nutstore.lastSyncError = error;
+  await writeJsonAtomic(preferencesPath(), preferences);
+  return publicPreferences(preferences);
+}
+
+async function uploadToNutstore() {
+  const preferences = await readPreferencesInternal();
+  const store = await readStore();
+  const envelope = { app: "调香手记", version: 1, exportedAt: new Date().toISOString(), data: store };
+  await nutstoreRequest("PUT", preferences, JSON.stringify(envelope, null, 2));
+  await updateSyncStatus();
+  return { direction: "upload", store };
+}
+
+async function syncWithNutstore() {
+  const preferences = await readPreferencesInternal();
+  if (!preferences.nutstore.enabled) throw new Error("请先启用坚果云同步。");
+  try {
+    const response = await nutstoreRequest("GET", preferences);
+    if (response.status === 404) return await uploadToNutstore();
+    const remoteEnvelope = JSON.parse(await response.text());
+    const remoteStore = normalizeStore(remoteEnvelope);
+    const localFile = path.join(preferences.dataDirectory, DATA_FILE);
+    const localEnvelope = await readJson(localFile, null);
+    const remoteTime = Date.parse(remoteEnvelope.exportedAt || "") || 0;
+    const localTime = Date.parse(localEnvelope?.exportedAt || "") || 0;
+    if (remoteTime > localTime) {
+      await writeStore(remoteStore, { sync: false });
+      await updateSyncStatus();
+      return { direction: "download", store: remoteStore };
+    }
+    return await uploadToNutstore();
+  } catch (error) {
+    await updateSyncStatus(error instanceof Error ? error.message : String(error));
+    throw error;
+  }
+}
+
+function scheduleCloudUpload() {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => { syncWithNutstore().catch(() => {}); }, 1500);
+}
 
 function createWindow() {
   const window = new BrowserWindow({
-    width: 1440,
-    height: 920,
-    minWidth: 1050,
-    minHeight: 680,
-    title: "调香手记",
-    icon: path.join(__dirname, "../public/app-icon.png"),
-    backgroundColor: "#f5f6f8",
-    autoHideMenuBar: true,
-    webPreferences: {
-      preload: path.join(__dirname, "preload.cjs"),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
+    width: 1440, height: 920, minWidth: 1050, minHeight: 680, title: "调香手记",
+    icon: path.join(__dirname, "../public/app-icon.png"), backgroundColor: "#f5f6f8", autoHideMenuBar: true,
+    webPreferences: { preload: path.join(__dirname, "preload.cjs"), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
-  window.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^https?:\/\//i.test(url)) shell.openExternal(url);
-    return { action: "deny" };
-  });
-  if (isDev) window.loadURL("http://127.0.0.1:5173");
-  else window.loadFile(path.join(__dirname, "../dist/index.html"));
+  window.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:\/\//i.test(url)) shell.openExternal(url); return { action: "deny" }; });
+  if (isDev) window.loadURL("http://127.0.0.1:5173"); else window.loadFile(path.join(__dirname, "../dist/index.html"));
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  ipcMain.handle("storage:list", () => readStore());
+  ipcMain.handle("storage:mutate", (_event, action, payload = {}) => {
+    writeQueue = writeQueue.then(async () => {
+      const store = await readStore();
+      const keys = { formula: "formulas", material: "materials", group: "groups", settings: "settings" };
+      const key = keys[payload.kind];
+      if (!key) throw new Error("无效的数据类型。");
+      if (action === "save" && payload.record?.id) {
+        const index = store[key].findIndex(item => item.id === payload.record.id);
+        if (index >= 0) store[key][index] = payload.record; else store[key].unshift(payload.record);
+      } else if (action === "delete" && payload.id) store[key] = store[key].filter(item => item.id !== payload.id);
+      else throw new Error("无效的存储请求。");
+      const preferences = await readPreferencesInternal();
+      await writeJsonAtomic(path.join(preferences.dataDirectory, DATA_FILE), { app: "调香手记", version: 1, exportedAt: new Date().toISOString(), data: store });
+      if (preferences.nutstore.enabled && preferences.nutstore.autoSync) scheduleCloudUpload();
+      return store;
+    });
+    return writeQueue;
+  });
+  ipcMain.handle("storage:replace", (_event, store) => writeStore(normalizeStore(store)));
+  ipcMain.handle("preferences:get", async () => publicPreferences(await readPreferencesInternal()));
+  ipcMain.handle("preferences:choose-directory", async () => {
+    const result = await dialog.showOpenDialog({ properties: ["openDirectory", "createDirectory"], title: "选择调香手记数据文件夹" });
+    return result.canceled ? null : result.filePaths[0];
+  });
+  ipcMain.handle("preferences:save", async (_event, next) => {
+    const current = await readPreferencesInternal();
+    const currentStore = await readStore();
+    const dataDirectory = path.resolve(next.dataDirectory || current.dataDirectory);
+    const nutstore = { ...current.nutstore, ...next.nutstore };
+    if (typeof next.nutstore?.password === "string" && next.nutstore.password) nutstore.password = encryptPassword(next.nutstore.password);
+    delete nutstore.hasPassword;
+    const saved = { dataDirectory, nutstore };
+    await fs.mkdir(dataDirectory, { recursive: true });
+    await writeJsonAtomic(preferencesPath(), saved);
+    if (dataDirectory !== current.dataDirectory) await writeStore(currentStore, { sync: false });
+    return publicPreferences(await readPreferencesInternal());
+  });
+  ipcMain.handle("nutstore:sync", () => syncWithNutstore());
+  ipcMain.handle("nutstore:test", async (_event, draft) => {
+    const current = await readPreferencesInternal();
+    const test = { ...current, nutstore: { ...current.nutstore, ...draft } };
+    if (draft.password) test.nutstore.password = encryptPassword(draft.password);
+    const response = await nutstoreRequest("GET", test);
+    return { ok: response.ok || response.status === 404 };
+  });
   createWindow();
+  const preferences = await readPreferencesInternal();
+  if (preferences.nutstore.enabled && preferences.nutstore.autoSync) syncWithNutstore().catch(() => {});
   app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });

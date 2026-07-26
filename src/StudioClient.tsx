@@ -3,15 +3,17 @@ import { useEffect, useRef, useState } from "react";
 import type { Evaluation, Formula, Group, GuestStore, Ingredient, Material, Note } from "./domain/models";
 import { emptyEvaluation, emptyFormula, nextVersion, noteMeta, tagIdsFor, today, uid } from "./domain/formula";
 import { demoFormula, demoMaterials } from "./domain/fixtures";
-import { readGuestStore, syncLocalStore, writeGuestStore } from "./services/localStore";
+import { readGuestStore, replaceGuestStore, syncLocalStore } from "./services/localStore";
+import type { DesktopPreferences } from "./platform";
 import { Field, ScoreInput, UnitInput } from "./components/common/FormControls";
 import { TagEditor } from "./components/tags/TagControls";
 import { BlendModal, FormulaLibrary, FormulaReader, NoteSection } from "./features/formulas/FormulaComponents";
 import { MaterialModal, Materials } from "./features/materials/MaterialComponents";
 import { GroupModal } from "./components/modals/GroupModal";
+import { Preferences } from "./features/preferences/Preferences";
 export default function StudioClient() {
     const dataSync = (action: string, payload: unknown = {}) => syncLocalStore(action, payload);
-    const [tab, setTab] = useState<"formulas" | "editor" | "materials">("formulas");
+    const [tab, setTab] = useState<"formulas" | "editor" | "materials" | "preferences">("formulas");
     const [formulas, setFormulas] = useState<Formula[]>([demoFormula]);
     const [materials, setMaterials] = useState<Material[]>(demoMaterials);
     const [groups, setGroups] = useState<Group[]>([]);
@@ -26,25 +28,36 @@ export default function StudioClient() {
     const [copyStatus, setCopyStatus] = useState("");
     const [toneHints, setToneHints] = useState(true);
     const [blendOpen, setBlendOpen] = useState(false);
+    const [desktopPreferences, setDesktopPreferences] = useState<DesktopPreferences | null>(null);
     const importRef = useRef<HTMLInputElement>(null);
     const [, setHistoryTick] = useState(0);
     const undoRef = useRef<Formula[]>([]);
     const redoRef = useRef<Formula[]>([]);
-    useEffect(() => {
-        dataSync("list").then((x: {
+    const loadData = async () => {
+        let x = await dataSync("list") as GuestStore;
+        if (window.formulaStudio && !x.formulas.length && !x.materials.length && !x.groups.length && !x.settings.length) {
+            const legacy = readGuestStore();
+            if (legacy.formulas.length || legacy.materials.length || legacy.groups.length || legacy.settings.length)
+                x = await replaceGuestStore(legacy);
+        }
+        const loaded = x as {
             formulas: Formula[];
             materials: Material[];
             groups: Group[];
-        }) => {
-            if (x.formulas.length) {
-                setFormulas(x.formulas);
-                setSelected(x.formulas[0].id);
-            }
-            if (x.materials.length)
-                setMaterials(x.materials);
-            if (x.groups)
-                setGroups(x.groups);
-        }).catch(() => { });
+        };
+            if (loaded.formulas.length) {
+                setFormulas(loaded.formulas);
+                setSelected(loaded.formulas[0].id);
+            } else setFormulas([demoFormula]);
+            if (loaded.materials.length)
+                setMaterials(loaded.materials);
+            else setMaterials(demoMaterials);
+            if (loaded.groups)
+                setGroups(loaded.groups);
+    };
+    useEffect(() => {
+        loadData().catch(() => { });
+        window.formulaStudio?.preferences.get().then(setDesktopPreferences).catch(() => {});
     }, []);
     const formula = formulas.find(f => f.id === selected) || formulas[0];
     const update = (patch: Partial<Formula>) => { setSaved(false); setSaveError(""); setFormulas(fs => fs.map(f => f.id === formula.id ? { ...f, ...patch } : f)); };
@@ -183,8 +196,9 @@ export default function StudioClient() {
     const rebalance = (ingredients: Formula["ingredients"]) => { const rows = Object.values(ingredients).flat(); const sum = rows.reduce((s, i) => s + (Number(i.amount) || 0), 0); const fixed = normalizeBy(ingredients, item => Number(item.amount) || 0); const fragrance = +(sum / 1000).toFixed(6); const solvent = formula.concentration > 0 ? +(fragrance * (100 - formula.concentration) / formula.concentration).toFixed(6) : 0; applyCalculated({ ...formula, ingredients: fixed, fragrance, solvent }); };
     const scaleRatiosTo100 = () => { if (ratioTotal <= 0 || !ratioUnder) return; const normalized = normalizeBy(formula.ingredients, item => Number(item.ratio) || 0); const ingredients = Object.fromEntries((Object.keys(normalized) as Note[]).map(note => [note, normalized[note].map(item => ({ ...item, amount: +(formula.fragrance * 1000 * item.ratio / 100).toFixed(4) }))])) as Formula["ingredients"]; applyCalculated({ ...formula, ingredients }); };
     const stepIngredient = (note: Note, id: string, direction: 1 | -1) => { if (ratioUnder) return; const step = formula.adjustmentStep ?? 10; const next = { ...formula.ingredients, [note]: formula.ingredients[note].map(i => i.id === id ? { ...i, amount: Math.max(0, +(i.amount + direction * step).toFixed(4)) } : i) }; rebalance(next); };
-    const exportGuestBackup = () => {
-        const blob = new Blob([JSON.stringify({ app: "调香手记", version: 1, exportedAt: new Date().toISOString(), data: readGuestStore() }, null, 2)], { type: "application/json" });
+    const exportGuestBackup = async () => {
+        const persisted = await dataSync("list") as GuestStore;
+        const blob = new Blob([JSON.stringify({ app: "调香手记", version: 1, exportedAt: new Date().toISOString(), data: persisted }, null, 2)], { type: "application/json;charset=utf-8" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
@@ -198,7 +212,7 @@ export default function StudioClient() {
             const source = (("data" in parsed ? parsed.data : parsed) || {}) as Partial<GuestStore>;
             const next: GuestStore = { formulas: Array.isArray(source.formulas) ? source.formulas : [], materials: Array.isArray(source.materials) ? source.materials : [], groups: Array.isArray(source.groups) ? source.groups : [], settings: Array.isArray(source.settings) ? source.settings : [] };
             if (!confirm(`导入将替换当前本地数据。备份中包含 ${next.formulas.length} 个配方版本和 ${next.materials.length} 种原料，是否继续？`)) return;
-            writeGuestStore(next);
+            await replaceGuestStore(next);
             setFormulas(next.formulas.length ? next.formulas : [demoFormula]);
             setMaterials(next.materials.length ? next.materials : demoMaterials);
             setGroups(next.groups);
@@ -212,14 +226,15 @@ export default function StudioClient() {
       <nav>
         <button className={tab === "formulas" || tab === "editor" ? "active" : ""} onClick={() => setTab("formulas")}><span>▤</span>配方库<i>{formulas.length}</i></button>
         <button className={tab === "materials" ? "active" : ""} onClick={() => setTab("materials")}><span>◇</span>原料库<i>{materials.length}</i></button>
+        <button className={tab === "preferences" ? "active" : ""} onClick={() => setTab("preferences")}><span>⚙</span>偏好设置</button>
       </nav>
       <div className="sidefoot accountFoot localFoot">
-        <div className="accountRow"><span className="accountAvatar">本</span><span><b>本地模式</b><small>数据仅保存在此电脑</small></span></div>
-        <div><span className="syncdot localDot"/> 自动保存已开启</div><div className="guestTools"><button onClick={exportGuestBackup}>导出备份</button><button onClick={() => importRef.current?.click()}>导入备份</button></div><input ref={importRef} className="hiddenFileInput" type="file" accept="application/json,.json" onChange={event => { const file = event.target.files?.[0]; if (file) void importGuestBackup(file); event.currentTarget.value = ""; }}/>
+        <div className="accountRow"><span className="accountAvatar">{desktopPreferences?.nutstore.enabled ? "云" : "本"}</span><span><b>{desktopPreferences?.nutstore.enabled ? "坚果云同步" : "本地模式"}</b><small>{desktopPreferences?.nutstore.enabled ? "自动同步已配置" : "数据保存在自定义路径"}</small></span></div>
+        <div><span className={`syncdot ${desktopPreferences?.nutstore.enabled ? "" : "localDot"}`}/> {desktopPreferences?.nutstore.enabled ? "云端备份已开启" : "自动保存已开启"}</div><div className="guestTools"><button onClick={() => void exportGuestBackup()}>导出备份</button><button onClick={() => importRef.current?.click()}>导入备份</button></div><input ref={importRef} className="hiddenFileInput" type="file" accept="application/json,.json" onChange={event => { const file = event.target.files?.[0]; if (file) void importGuestBackup(file); event.currentTarget.value = ""; }}/>
       </div>
     </aside>
     <section className="workspace">
-      <header><div className="mobilebrand">调香手记</div>{tab !== "editor" ? <div className="search">⌕ <input value={query} onChange={e => setQuery(e.target.value)} placeholder={tab === "formulas" ? "搜索配方…" : "搜索原料…"}/><kbd>Ctrl K</kbd></div> : <div className="editorCrumb"><button onClick={() => setTab("formulas")}>配方库</button><span>／</span><b>{formula?.name}</b></div>}<div className="headerStorage guest"><span>●</span>本机保存</div><button className="primary" onClick={tab === "formulas" ? create : tab === "materials" ? () => { setEditingMaterial(null); setMaterialModal(true); } : () => setTab("formulas")}>{tab !== "editor" ? "＋ " : "← "}{tab === "formulas" ? "新建配方" : tab === "materials" ? "添加原料" : "返回配方库"}</button></header>
+      <header><div className="mobilebrand">调香手记</div>{tab === "preferences" ? <div className="editorCrumb"><b>偏好设置</b></div> : tab !== "editor" ? <div className="search">⌕ <input value={query} onChange={e => setQuery(e.target.value)} placeholder={tab === "formulas" ? "搜索配方…" : "搜索原料…"}/><kbd>Ctrl K</kbd></div> : <div className="editorCrumb"><button onClick={() => setTab("formulas")}>配方库</button><span>／</span><b>{formula?.name}</b></div>}<div className={`headerStorage ${desktopPreferences?.nutstore.enabled ? "cloud" : "guest"}`}><span>●</span>{desktopPreferences?.nutstore.enabled ? "坚果云同步" : "本机保存"}</div>{tab !== "preferences" && <button className="primary" onClick={tab === "formulas" ? create : tab === "materials" ? () => { setEditingMaterial(null); setMaterialModal(true); } : () => setTab("formulas")}>{tab !== "editor" ? "＋ " : "← "}{tab === "formulas" ? "新建配方" : tab === "materials" ? "添加原料" : "返回配方库"}</button>}</header>
       {tab === "formulas" ? <FormulaLibrary formulas={formulas} groups={groups.filter(g => g.kind === "formula")} query={query} onOpen={openFormula} onCreate={create} onCreateVersion={createVersion} onDelete={deleteFormulas} onNewGroup={() => setGroupModal("formula")} onDeleteGroup={deleteGroup} onAssign={assignFormula}/> : tab === "editor" && formula ? (!editing ? <FormulaReader formula={formula} materials={materials} groups={groups.filter(g => g.kind === "formula")} onEdit={() => setEditing(true)} onBlend={() => setBlendOpen(true)} onCopy={copyMarkdown} onDelete={remove} copyStatus={copyStatus}/> : <div className="editor editorFull"><div className="editorHead"><div className="editorIdentity"><span className="eyebrow">编辑配方 · VERSION {formula.version}</span><input className="nameInput" value={formula.name} onChange={e => update({ name: e.target.value })}/>{saveError && <small className="saveError">{saveError}</small>}</div><div className="actions"><button onClick={() => setBlendOpen(true)}>开始调配</button><button onClick={() => { setEditing(false); setSaveError(""); }}>取消</button><button className="primary" onClick={save}>保存配方</button></div></div>
           <div className="sheet"><h4><span>01</span> 基本配方信息</h4><div className="formgrid">
             <Field label="版本号"><input disabled={!editing} inputMode="numeric" pattern="\d+\.\d+\.\d+" placeholder="1.0.0" value={formula.version} onChange={e => update({ version: e.target.value })}/></Field><Field label="创建日期"><input type="date" disabled={!editing} value={formula.created} onChange={e => update({ created: e.target.value })}/></Field>
@@ -233,7 +248,7 @@ export default function StudioClient() {
             {(["top", "heart", "base"] as Note[]).map(note => <NoteSection key={note} note={note} formula={formula} materials={materials} editing={editing} update={update} showToneHints={toneHints}/>)}</div>
           <div className="sheet evaluationSheet"><h4><span>03</span> 试香评估 <em>记录可比较的客观表现与后续方向</em></h4>{(() => { const assessment = formula.evaluation ?? emptyEvaluation(); const setEvaluation = (patch: Partial<Evaluation>) => update({ evaluation: { ...assessment, ...patch } }); return <><div className="evaluationMetrics"><Field label="试香日期"><input type="date" disabled={!editing} value={assessment.testedAt} onChange={e => setEvaluation({ testedAt: e.target.value })}/></Field><Field label="静置天数"><UnitInput disabled={!editing} value={assessment.restDays} unit="天" onChange={v => setEvaluation({ restDays: Math.max(0, v) })}/></Field><Field label="扩散力"><ScoreInput disabled={!editing} value={assessment.projection} onChange={v => setEvaluation({ projection: v })}/></Field><Field label="香迹"><ScoreInput disabled={!editing} value={assessment.sillage} onChange={v => setEvaluation({ sillage: v })}/></Field><Field label="留香时间"><UnitInput disabled={!editing} value={assessment.longevity} unit="小时" onChange={v => setEvaluation({ longevity: Math.max(0, v) })}/></Field></div><Field label="下一版本修改方向"><textarea disabled={!editing} value={assessment.nextStep} onChange={e => setEvaluation({ nextStep: e.target.value })} placeholder="例如：减少甜感、加强开场扩散、保留当前尾调…"/></Field></>; })()}</div>
           <div className="sheet"><h4><span>04</span> 调香备注</h4><textarea disabled={!editing} value={formula.notes} onChange={e => update({ notes: e.target.value })} placeholder="记录制作过程、原料批次或与上一版本的差异…"/></div>
-        </div>) : <Materials materials={materials} groups={groups.filter(g => g.kind === "material")} query={query} onAdd={() => { setEditingMaterial(null); setMaterialModal(true); }} onEdit={m => { setEditingMaterial(m); setMaterialModal(true); }} onDelete={deleteMaterials} onNewGroup={() => setGroupModal("material")} onDeleteGroup={deleteGroup} onAssign={assignMaterial}/>} 
+        </div>) : tab === "materials" ? <Materials materials={materials} groups={groups.filter(g => g.kind === "material")} query={query} onAdd={() => { setEditingMaterial(null); setMaterialModal(true); }} onEdit={m => { setEditingMaterial(m); setMaterialModal(true); }} onDelete={deleteMaterials} onNewGroup={() => setGroupModal("material")} onDeleteGroup={deleteGroup} onAssign={assignMaterial}/> : <Preferences onDataReload={loadData} onStorageChanged={setDesktopPreferences}/>}
     </section>
     {materialModal && <MaterialModal initial={editingMaterial} groups={groups.filter(g => g.kind === "material")} onCreateTag={name => createInlineTag(name, "material")} onClose={() => { setMaterialModal(false); setEditingMaterial(null); }} onSave={async (m) => { const duplicate=materials.some(v=>v.id!==m.id&&v.cn.trim().toLocaleLowerCase()===m.cn.trim().toLocaleLowerCase()&&v.en.trim().toLocaleLowerCase()===m.en.trim().toLocaleLowerCase()); if(duplicate)throw new Error("已有中文名和英文名均相同的原料，请修改名称后再保存。"); await dataSync("save", { kind: "material", record: m }); setMaterials(x => editingMaterial ? x.map(v => v.id === m.id ? m : v) : [m, ...x]); setMaterialModal(false); setEditingMaterial(null); }}/>} 
     {groupModal && <GroupModal kind={groupModal} onClose={() => setGroupModal(null)} onSave={name => saveGroup(name, groupModal)}/>} 

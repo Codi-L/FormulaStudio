@@ -16,7 +16,7 @@ src/
 │   ├── formula.ts       Formula, version, date, and tag helpers
 │   └── fixtures.ts      Initial demonstration data and defaults
 ├── services/            Browser and platform adapters
-│   └── localStore.ts    Local-storage persistence
+│   └── localStore.ts    Browser fallback and Electron storage bridge
 ├── StudioClient.tsx     Application state and feature composition
 ├── main.tsx             React entry point
 └── styles.css           Application styles
@@ -36,3 +36,7 @@ src/
 - Put storage, file, or future cloud access behind `services/`.
 - Put reusable UI in a focused folder under `components/`.
 - Keep `StudioClient.tsx` responsible for orchestration rather than low-level implementation.
+
+## Desktop persistence
+
+The Electron main process owns filesystem and Nutstore WebDAV access. The preload script exposes a narrow IPC bridge; renderer code cannot access Node directly. User data is stored in a versioned backup envelope in `formula-studio-data.json`, while preferences and OS-encrypted credentials remain under Electron's `userData` directory. Storage mutations are serialized to avoid lost updates from concurrent UI actions.
