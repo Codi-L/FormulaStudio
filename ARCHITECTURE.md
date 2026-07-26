@@ -6,7 +6,11 @@ The renderer follows a small layered structure:
 src/
 ├── components/          Reusable visual controls
 │   ├── common/          Generic form inputs
+│   ├── modals/          Shared application dialogs
 │   └── tags/            Tag and group controls
+├── features/            Feature-specific screens and workflows
+│   ├── formulas/        Formula library, reader, editor sections, and blending
+│   └── materials/       Material library and material editing
 ├── domain/              Perfume-formulation data and pure helpers
 │   ├── models.ts        Shared domain types
 │   ├── formula.ts       Formula, version, date, and tag helpers
@@ -23,7 +27,7 @@ src/
 - Components may import domain types and helpers.
 - Services may import domain types, but never React components.
 - Domain modules must remain independent of React and persistence.
-- `StudioClient.tsx` composes features and coordinates state; reusable logic should not be added there.
+- `StudioClient.tsx` composes feature modules and coordinates application-level state; feature UI belongs under `features/`.
 
 ## Adding functionality
 
@@ -32,4 +36,3 @@ src/
 - Put storage, file, or future cloud access behind `services/`.
 - Put reusable UI in a focused folder under `components/`.
 - Keep `StudioClient.tsx` responsible for orchestration rather than low-level implementation.
-
