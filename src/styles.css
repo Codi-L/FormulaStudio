@@ -550,3 +550,106 @@ main.platform-macos .formulaReader *::before,main.platform-macos .formulaReader 
 @media(hover:hover){
   .color-dark .tagChoices label:hover{background:#304f70!important;border-color:#5b8cbe!important;color:#d1e7ff!important}
 }
+
+/* 材料编辑器分段按钮：选中状态只用文字和底线表示，背景仅属于真正的 hover。 */
+.seg.three button.on{
+  background-color:transparent!important;background-image:none!important;
+  color:#1476f2;font-weight:700;filter:none!important;
+  box-shadow:inset 0 -2px #1476f2!important
+}
+@media(hover:hover){
+  .seg.three button:not(:disabled):hover{
+    background-color:#dcecff!important;background-image:none!important;
+    color:#075fc9;transform:none
+  }
+  .seg.three button.on:not(:disabled):hover{
+    background-color:#dcecff!important;color:#075fc9;
+    box-shadow:inset 0 -2px #1476f2!important
+  }
+}
+.color-dark .seg.three button.on{
+  background-color:transparent!important;background-image:none!important;
+  color:#72b0f5;filter:none!important;
+  box-shadow:inset 0 -2px #4c96e8!important
+}
+@media(hover:hover){
+  .color-dark .seg.three button:not(:disabled):hover{
+    background-color:#2b3d52!important;background-image:none!important;color:#b8d9ff
+  }
+  .color-dark .seg.three button.on:not(:disabled):hover{
+    background-color:#2b3d52!important;color:#b8d9ff;
+    box-shadow:inset 0 -2px #5ba5f4!important
+  }
+}
+
+/* 材料编辑弹窗使用显式 hover 类，确保任何时刻只有一个按钮获得悬停背景。 */
+@media(hover:hover){
+  .seg.three.explicitHover button:not(:disabled):hover,
+  .seg.three.explicitHover button.on:not(:disabled):hover{
+    background-color:transparent!important;background-image:none!important;
+    color:inherit;filter:none!important
+  }
+  .seg.three.explicitHover button.isHovered:not(:disabled),
+  .seg.three.explicitHover button.on.isHovered:not(:disabled){
+    background-color:#dcecff!important;color:#075fc9!important
+  }
+  .color-dark .seg.three.explicitHover button:not(:disabled):hover,
+  .color-dark .seg.three.explicitHover button.on:not(:disabled):hover{
+    background-color:transparent!important;color:inherit
+  }
+  .color-dark .seg.three.explicitHover button.isHovered:not(:disabled),
+  .color-dark .seg.three.explicitHover button.on.isHovered:not(:disabled){
+    background-color:#2b3d52!important;color:#b8d9ff!important
+  }
+}
+
+/* 其它按钮悬停时，当前选中项的文字颜色必须保持不变。 */
+.seg.three.explicitHover button.on:not(.isHovered),
+.seg.three.explicitHover button.on:not(.isHovered):hover{
+  background-color:transparent!important;color:#1476f2!important;
+  box-shadow:inset 0 -2px #1476f2!important
+}
+.color-dark .seg.three.explicitHover button.on:not(.isHovered),
+.color-dark .seg.three.explicitHover button.on:not(.isHovered):hover{
+  background-color:transparent!important;color:#72b0f5!important;
+  box-shadow:inset 0 -2px #4c96e8!important
+}
+
+/* 最终状态表：显式类是唯一颜色来源，不再采用浏览器原生 :hover 结果。 */
+.seg.three.explicitHover button,
+.seg.three.explicitHover button:hover{
+  background-color:transparent!important;background-image:none!important;
+  color:#777!important;box-shadow:none!important;filter:none!important;transform:none!important
+}
+.seg.three.explicitHover button.on,
+.seg.three.explicitHover button.on:hover{
+  background-color:transparent!important;color:#1476f2!important;
+  box-shadow:inset 0 -2px #1476f2!important
+}
+.seg.three.explicitHover button.isHovered,
+.seg.three.explicitHover button.isHovered:hover{
+  background-color:#dcecff!important;color:#075fc9!important;box-shadow:none!important
+}
+.seg.three.explicitHover button.on.isHovered,
+.seg.three.explicitHover button.on.isHovered:hover{
+  background-color:#dcecff!important;color:#075fc9!important;
+  box-shadow:inset 0 -2px #1476f2!important
+}
+.color-dark .seg.three.explicitHover button,
+.color-dark .seg.three.explicitHover button:hover{
+  background-color:transparent!important;color:var(--dark-subtle)!important;box-shadow:none!important
+}
+.color-dark .seg.three.explicitHover button.on,
+.color-dark .seg.three.explicitHover button.on:hover{
+  background-color:transparent!important;color:#72b0f5!important;
+  box-shadow:inset 0 -2px #4c96e8!important
+}
+.color-dark .seg.three.explicitHover button.isHovered,
+.color-dark .seg.three.explicitHover button.isHovered:hover{
+  background-color:#2b3d52!important;color:#b8d9ff!important;box-shadow:none!important
+}
+.color-dark .seg.three.explicitHover button.on.isHovered,
+.color-dark .seg.three.explicitHover button.on.isHovered:hover{
+  background-color:#2b3d52!important;color:#b8d9ff!important;
+  box-shadow:inset 0 -2px #5ba5f4!important
+}
