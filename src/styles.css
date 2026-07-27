@@ -225,13 +225,15 @@ button:disabled{cursor:not-allowed}
   background:#ececef
 }
 .platform-macos aside{
-  width:232px;padding:52px 14px 20px;background:rgba(235,235,240,.92);color:#252529;
-  border-right:1px solid rgba(0,0,0,.12);-webkit-app-region:drag
+  width:232px;padding:52px 14px 20px;
+  background:linear-gradient(135deg,rgba(255,255,255,.58),rgba(226,226,232,.48));color:#252529;
+  border-right:1px solid rgba(0,0,0,.12);backdrop-filter:blur(30px) saturate(1.65);
+  -webkit-backdrop-filter:blur(30px) saturate(1.65);-webkit-app-region:drag
 }
 .platform-macos aside button,.platform-macos aside input,.platform-macos .sidefoot{-webkit-app-region:no-drag}
 .platform-macos .brand{padding:0 10px 22px}.platform-macos .brand small{color:#77777e}
 .platform-macos nav button{height:38px;color:#55555d;border-radius:7px!important;padding:0 10px}
-.platform-macos nav button.active{color:#1d1d1f;background:rgba(0,0,0,.095)}
+.platform-macos nav button.active{color:#1d1d1f;background:#d1d1d6}
 .platform-macos nav button i{background:rgba(0,0,0,.09);color:#555;border-radius:999px!important}
 .platform-macos .accountRow{border-color:rgba(0,0,0,.1)}
 .platform-macos .accountRow b{color:#333}.platform-macos .accountRow small,.platform-macos .sidefoot{color:#74747b}
@@ -253,5 +255,26 @@ button:disabled{cursor:not-allowed}
 .platform-macos .editorHead{top:0;background:rgba(250,250,252,.86)}
 .platform-macos .modal{background:rgba(20,20,25,.28);backdrop-filter:blur(16px) saturate(1.2)}
 .platform-macos .dialog{box-shadow:0 22px 65px rgba(0,0,0,.24)}
+@media(hover:hover){
+  .platform-macos nav button:not(.active):not(:disabled):hover{
+    background:#dedee3;color:#1d1d1f;transform:none;box-shadow:none
+  }
+  .platform-macos nav button.active:not(:disabled):hover{background:#c8c8cd;color:#1d1d1f}
+}
+.platform-macos button,.platform-macos input,.platform-macos select,.platform-macos textarea,
+.platform-macos kbd,.platform-macos .headerStorage,.platform-macos .calcbar,
+.platform-macos .ratioWarning,.platform-macos .ratioUnderNotice,.platform-macos .batchBar,
+.platform-macos .materialStats>button,.platform-macos .materialSort,.platform-macos .sortWarning,
+.platform-macos .tagEditor,.platform-macos .newTagInline input,.platform-macos .newTagInline button,
+.platform-macos .sourceItem,.platform-macos .syncOptions,.platform-macos .preferenceStatus,
+.platform-macos .securityHint,.platform-macos .blendOverview>div,.platform-macos .blendTable,
+.platform-macos .blendRepair,.platform-macos .repairChoices button,.platform-macos .readerNote,
+.platform-macos .readerSummary>div,.platform-macos .readerScores>div,.platform-macos .readerJournal>div,
+.platform-macos .readerNotes>p,.platform-macos .readerEmptyComposition{border-radius:8px!important}
+.platform-macos .groupBar>button,.platform-macos .groupChip,.platform-macos .tagDisplay i,
+.platform-macos .tagChoices label,.platform-macos .materialSort em{border-radius:999px!important}
+.platform-macos .modalHead button,.platform-macos .changeDialog>header button,
+.platform-macos .dot,.platform-macos .syncdot,.platform-macos .blendDot{border-radius:50%!important}
+.platform-macos .readerSummary{gap:8px}.platform-macos .readerSummary>div{margin-right:0}
 @media(max-width:900px){.platform-macos aside{width:74px;padding-top:52px}}
 @media(max-width:680px){.platform-macos aside{padding:7px 20px}.platform-macos header{height:62px}.platform-macos .materialPage,.platform-macos .preferencesPage{height:auto}}
