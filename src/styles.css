@@ -340,9 +340,9 @@ main.platform-macos .formulaReader *::before,main.platform-macos .formulaReader 
 /* Complete dark surface audit. These rules intentionally live at the end of the
    stylesheet so feature-specific light styles cannot win through source order. */
 .color-dark{
-  --dark-canvas:#171a1f;--dark-page:#1b1f24;--dark-surface:#23282f;
-  --dark-raised:#292f37;--dark-input:#20252b;--dark-hover:#303741;
-  --dark-border:#3a414b;--dark-text:#eef1f5;--dark-subtle:#a2a9b3;
+  --dark-canvas:#17191c;--dark-page:#1d1f2360;--dark-surface:#22252a;
+  --dark-raised:#2d3137;--dark-input:#1e2225;--dark-hover:#353a42;
+  --dark-border:#3e444b;--dark-text:#eef1f5;--dark-subtle:#a7acb4;
 }
 .color-dark .workspace,.color-dark .split,.color-dark .editorFull,
 .color-dark .editor,.color-dark .library,.color-dark .materialPage,
@@ -512,3 +512,41 @@ main.platform-macos .formulaReader *::before,main.platform-macos .formulaReader 
 .color-dark .fallbackSwitch{background:var(--dark-input);color:var(--dark-text)}
 .color-dark .sourceItem>span{background:#1d3046;color:#8fc1ff}
 .color-dark .settingsHint,.color-dark .fallbackSwitch small{color:var(--dark-subtle)}
+
+/* Formula-card actions must remain distinct from the card hover surface. */
+.color-dark .formulaStack .stackActions button:not(.foldButton){
+  background:#223b58!important;color:#9bc9ff!important;border:1px solid #355b84!important
+}
+.color-dark .formulaStack .stackActions .newVersionButton{
+  background:#29486a!important;color:#b4d8ff!important;border-color:#4274a8!important
+}
+.color-dark .formulaStack .stackActions .foldButton{
+  background:#343b44!important;color:#d8dde4!important;border:1px solid #4b5562!important
+}
+@media(hover:hover){
+  .color-dark .formulaStack .stackActions button:not(.foldButton):not(:disabled):hover{
+    background:#2d5279!important;color:#fff!important;border-color:#5b91c9!important;
+    filter:none;box-shadow:0 5px 14px rgba(8,18,30,.28)
+  }
+  .color-dark .formulaStack .stackActions .newVersionButton:not(:disabled):hover{
+    background:#35618e!important;border-color:#72a8dd!important
+  }
+  .color-dark .formulaStack .stackActions .foldButton:not(:disabled):hover{
+    background:#414a55!important;color:#fff!important;border-color:#626f7f!important;
+    filter:none;box-shadow:0 5px 14px rgba(8,18,30,.24)
+  }
+}
+
+/* Treat each tag chip as one hover target instead of highlighting only its inner button. */
+@media(hover:hover){
+  .groupChip:has(button:hover){border-color:#91bff4;background:#eef6ff;color:var(--blue);transform:translateY(-1px)}
+  .groupChip button:not(:disabled):hover{background:transparent;transform:none}
+  .tagChoices label:hover{border-color:#91bff4;background:#eef6ff;color:var(--blue);transform:translateY(-1px)}
+}
+.tagChoices label:has(input:checked){border-color:#97c4fb;background:#eef6ff;color:var(--blue)}
+.color-dark .groupChip:has(button:hover){background:#2a4665!important;border-color:#4f7eae!important;color:#a9d2ff!important}
+.color-dark .groupChip button:hover{background:transparent!important;color:inherit!important}
+.color-dark .tagChoices label:has(input:checked){background:#294866!important;border-color:#4777a8!important;color:#b2d5f8!important}
+@media(hover:hover){
+  .color-dark .tagChoices label:hover{background:#304f70!important;border-color:#5b8cbe!important;color:#d1e7ff!important}
+}
