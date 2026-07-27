@@ -8,7 +8,9 @@
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on http://127.0.0.1:5173 && electron .\"",
     "build": "tsc --noEmit && vite build",
-    "dist": "npm run build && electron-builder --win nsis portable",
+    "dist": "npm run dist:win",
+    "dist:win": "npm run build && electron-builder --win nsis portable",
+    "dist:mac": "npm run build && electron-builder --mac dmg --universal",
     "start": "electron ."
   },
   "dependencies": {
@@ -33,6 +35,16 @@
     "directories": { "output": "release" },
     "files": ["dist/**/*", "electron/**/*", "package.json"],
     "win": { "icon": "public/app-icon.png" },
+    "mac": {
+      "icon": "public/app-icon-macos.png",
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["universal"]
+        }
+      ]
+    },
     "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true },
     "portable": { "artifactName": "FormulaStudio-Portable-${version}.exe" }
   }
