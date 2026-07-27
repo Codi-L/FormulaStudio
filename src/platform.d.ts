@@ -19,6 +19,7 @@ export type DesktopPreferences = {
 declare global {
   interface Window {
     formulaStudio?: {
+      platform: NodeJS.Platform;
       storage: {
         list(): Promise<GuestStore>;
         backup(): Promise<{ app: "调香手记"; version: 1; syncRevision: number; exportedAt: string; data: GuestStore }>;

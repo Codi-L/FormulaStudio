@@ -12,6 +12,7 @@ import { MaterialModal, Materials } from "./features/materials/MaterialComponent
 import { GroupModal } from "./components/modals/GroupModal";
 import { Preferences } from "./features/preferences/Preferences";
 export default function StudioClient() {
+    const platform = window.formulaStudio?.platform === "darwin" || (!window.formulaStudio && /Mac/.test(navigator.platform)) ? "macos" : "windows";
     const dataSync = (action: string, payload: unknown = {}) => syncLocalStore(action, payload);
     const [tab, setTab] = useState<"formulas" | "editor" | "materials" | "preferences">("formulas");
     const [formulas, setFormulas] = useState<Formula[]>([demoFormula]);
@@ -223,9 +224,9 @@ export default function StudioClient() {
             setTab("formulas");
         } catch { alert("无法读取该备份文件，请确认它来自调香手记。"); }
     };
-    return <main>
+    return <main className={`platform-${platform}`}>
     <aside>
-      <div className="brand homeBrand"><img className="brandmark brandIcon" src="./app-icon.png" alt="调香手记图标"/><div><b>调香手记</b><small>FORMULA STUDIO</small></div></div>
+      <div className="brand homeBrand"><img className="brandmark brandIcon" src={platform === "macos" ? "./app-icon-macos.png" : "./app-icon.png"} alt="调香手记图标"/><div><b>调香手记</b><small>FORMULA STUDIO</small></div></div>
       <nav>
         <button className={tab === "formulas" || tab === "editor" ? "active" : ""} onClick={() => setTab("formulas")}><span>▤</span>配方库<i>{formulas.length}</i></button>
         <button className={tab === "materials" ? "active" : ""} onClick={() => setTab("materials")}><span>◇</span>原料库<i>{materials.length}</i></button>

@@ -69,7 +69,7 @@ export function Preferences({ onDataReload, onStorageChanged }: Props) {
     <section className="preferenceCard">
       <div className="preferenceHeading"><div><small>LOCAL STORAGE</small><h2>本地数据路径</h2></div><span>数据迁移时会保留当前内容</span></div>
       <label className="pathField"><input readOnly value={preferences.dataDirectory}/><button onClick={chooseDirectory} disabled={busy}>选择文件夹</button></label>
-      <p className="pathHint">数据文件：{`${preferences.dataDirectory}\\formula-studio-data.json`}</p>
+      <p className="pathHint">数据文件：{preferences.dataFile || `${preferences.dataDirectory}/formula-studio-data.json`}</p>
     </section>
     <section className="preferenceCard">
       <div className="preferenceHeading"><div><small>NUTSTORE WEBDAV</small><h2>坚果云同步</h2></div><label className="switchLabel"><input type="checkbox" checked={preferences.nutstore.enabled} onChange={e => updateNutstore({ enabled: e.target.checked })}/><span>{preferences.nutstore.enabled ? "已启用" : "未启用"}</span></label></div>

@@ -232,9 +232,12 @@ function notifyStorageChanged() {
 }
 
 function createWindow() {
+  const isMac = process.platform === "darwin";
   const window = new BrowserWindow({
     width: 1440, height: 920, minWidth: 1050, minHeight: 680, title: "调香手记",
-    icon: path.join(__dirname, "../public/app-icon.png"), backgroundColor: "#f5f6f8", autoHideMenuBar: true,
+    icon: path.join(__dirname, isMac ? "../public/app-icon-macos.png" : "../public/app-icon.png"),
+    backgroundColor: isMac ? "#ececef" : "#f5f6f8", autoHideMenuBar: true,
+    ...(isMac ? { titleBarStyle: "hiddenInset", trafficLightPosition: { x: 18, y: 18 } } : {}),
     webPreferences: { preload: path.join(__dirname, "preload.cjs"), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
   window.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:\/\//i.test(url)) shell.openExternal(url); return { action: "deny" }; });

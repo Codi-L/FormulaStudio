@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("formulaStudio", {
+  platform: process.platform,
   storage: {
     list: () => ipcRenderer.invoke("storage:list"),
     backup: () => ipcRenderer.invoke("storage:backup"),
