@@ -336,3 +336,179 @@ main.platform-macos .formulaReader *::before,main.platform-macos .formulaReader 
 .color-dark.platform-macos .formulaTile,.color-dark.platform-macos .formulaCard,.color-dark.platform-macos .materialGrid article,
 .color-dark.platform-macos .preferenceCard,.color-dark.platform-macos .noteBlock,.color-dark.platform-macos .dialog,
 .color-dark.platform-macos .changeDialog{background:rgba(35,40,47,.94);border-color:#343941}
+
+/* Complete dark surface audit. These rules intentionally live at the end of the
+   stylesheet so feature-specific light styles cannot win through source order. */
+.color-dark{
+  --dark-canvas:#171a1f;--dark-page:#1b1f24;--dark-surface:#23282f;
+  --dark-raised:#292f37;--dark-input:#20252b;--dark-hover:#303741;
+  --dark-border:#3a414b;--dark-text:#eef1f5;--dark-subtle:#a2a9b3;
+}
+.color-dark .workspace,.color-dark .split,.color-dark .editorFull,
+.color-dark .editor,.color-dark .library,.color-dark .materialPage,
+.color-dark .preferencesPage{background:var(--dark-page);color:var(--dark-text)}
+.color-dark .editorFull>.sheet:nth-child(2),.color-dark .editorFull>.sheet:nth-child(3),
+.color-dark .editorFull>.sheet:nth-child(4),.color-dark .sheet{background:var(--dark-surface);border-color:var(--dark-border)}
+.color-dark header,.color-dark .editorHead{background:rgba(27,31,36,.94);border-color:var(--dark-border);color:var(--dark-text)}
+.color-dark .editorCrumb b,.color-dark .versionRow>button,.color-dark .noteTitle>span,
+.color-dark .tr input:disabled{color:var(--dark-text)}
+
+/* Cards, panels, tables and dialog surfaces. */
+.color-dark .formulaCard,.color-dark .formulaTile,.color-dark .materialGrid article,
+.color-dark .materialStats>div,.color-dark .materialStats>button,.color-dark .materialSort,
+.color-dark .preferenceCard,.color-dark .dialog,.color-dark .changeDialog,
+.color-dark .noteBlock,.color-dark .tagEditor,.color-dark .sourceItem,
+.color-dark .blendOverview>div,.color-dark .blendTable,.color-dark .readerNote,
+.color-dark .readerSummary>div,.color-dark .readerScores>div,.color-dark .readerJournal>div,
+.color-dark .readerNotes>p,.color-dark .readerEmptyComposition,.color-dark .solventBreakdown,
+.color-dark .solventBreakdown>div,.color-dark .migrationDialog{
+  background:var(--dark-surface);border-color:var(--dark-border);color:var(--dark-text)
+}
+.color-dark .formulaCard:hover,.color-dark .formulaTile:hover,.color-dark .editableMaterial:hover,
+.color-dark .materialStats>button:hover{background:var(--dark-raised);border-color:#536174}
+.color-dark .formulaCard.chosen,.color-dark .materialStats>button.active,
+.color-dark .materialTypeFilters button.on,.color-dark .groupBar .on,.color-dark .groupChip.on{
+  background:#203149;border-color:#397acb;color:#83baff
+}
+.color-dark .noteTitle,.color-dark .tr.th,.color-dark .versionList,
+.color-dark .blendTableHead,.color-dark .readerTableHead{background:var(--dark-input);border-color:var(--dark-border)}
+.color-dark .tr,.color-dark .ingredientWrap,.color-dark .versionRow,.color-dark .tagPicker,
+.color-dark .tagDisplay,.color-dark .singleVersionControls,.color-dark .modalHead,
+.color-dark .modalActions,.color-dark .changeDialog>header,.color-dark .blendTableRow,
+.color-dark .readerTableRow{border-color:var(--dark-border)}
+
+/* Inputs and interactive controls. */
+.color-dark input,.color-dark select,.color-dark textarea,.color-dark .unitInput,
+.color-dark .newTagInline input,.color-dark .pathField input,.color-dark .preferenceGrid input,
+.color-dark .frequencyField input{
+  background-color:var(--dark-input);color:var(--dark-text);border-color:#454d58
+}
+.color-dark input:disabled,.color-dark select:disabled,.color-dark textarea:disabled,
+.color-dark .unitInput:has(input:disabled){background-color:#1d2127;color:#aeb4bd}
+.color-dark .actions button,.color-dark .modalActions button,.color-dark .historyBtns button,
+.color-dark .stepBtns button,.color-dark .addrow,.color-dark .groupBar>button,
+.color-dark .groupChip,.color-dark .materialTypeFilters button,.color-dark .materialActions button,
+.color-dark .batchBar button,.color-dark .pathField button,.color-dark .preferenceActions button,
+.color-dark .newTagInline button,.color-dark .sourceItem button,.color-dark .repairChoices button,
+.color-dark .migrationBody>button,.color-dark .guestTools button,.color-dark .stackActions button{
+  background:var(--dark-raised)!important;color:#dce1e7!important;border-color:#48515d!important
+}
+.color-dark .actions button:hover,.color-dark .modalActions button:hover,
+.color-dark .groupBar>button:hover,.color-dark .materialTypeFilters button:hover,
+.color-dark .preferenceActions button:hover,.color-dark .repairChoices button:hover{
+  background:var(--dark-hover)!important;border-color:#607084!important
+}
+.color-dark .primary,.color-dark .batchDelete,.color-dark .ratioWarning button,
+.color-dark .concentrationWarning button{background:var(--blue)!important;color:#fff!important;border-color:transparent!important}
+.color-dark .danger,.color-dark .materialActions .danger,.color-dark .discardGuest{background:#3b2327!important;color:#f1a4aa!important;border-color:#694047!important}
+
+/* Filters, tags, badges and notices. */
+.color-dark .use,.color-dark .tagDisplay i,.color-dark .tagPicker label,
+.color-dark .tagChoices label,.color-dark .materialSort em,.color-dark .blendMaterialName em,
+.color-dark .stackActions button:not(.foldButton){background:#1d3046;color:#8fc1ff;border-color:#315477!important}
+.color-dark .tagChoices label,.color-dark .tagPicker label{background:#222d39!important;color:#a9c4df!important}
+.color-dark .materialSort,.color-dark .materialTypeFilters button{background:var(--dark-surface);color:#d8dde4;border-color:var(--dark-border)}
+.color-dark .calcbar,.color-dark .syncOptions,.color-dark .readonlyMetric,
+.color-dark .search,.color-dark .seg{background:var(--dark-input);border-color:var(--dark-border)}
+.color-dark .seg button{color:var(--dark-subtle)}.color-dark .seg button.on{background:#39414c;color:#8fc1ff}
+.color-dark .batchBar,.color-dark .securityHint,.color-dark .dilutionInfo,
+.color-dark .ratioUnderNotice,.color-dark .sortWarning,.color-dark .blendRepair{background:#1d2c3c;border-color:#365676;color:#abc2da}
+.color-dark .ratioWarning,.color-dark .concentrationWarning,.color-dark .solventBreakdown>p{background:#3a301d;border-color:#705b2c;color:#efca76}
+.color-dark .preferenceStatus{background:#20362a;color:#9bd0aa}.color-dark .preferenceStatus.error,.color-dark .migrationError{background:#3b2427;color:#efabb0}
+
+/* Preference selectors and previews. */
+.color-dark .themeChoices>button,.color-dark .colorModeChoices>button{background:var(--dark-input);border-color:var(--dark-border);color:var(--dark-text)}
+.color-dark .themeChoices>button:hover,.color-dark .colorModeChoices>button:hover{background:var(--dark-raised);border-color:#56687e}
+.color-dark .themeChoices>button.selected,.color-dark .colorModeChoices>button.selected{background:#203149;border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
+.color-dark .themeChoices>button>span{border-color:#4b535e}
+
+/* Muted copy must stay readable instead of retaining light-theme gray. */
+.color-dark .field>span,.color-dark .formulaCard p,.color-dark .formulaCard time,
+.color-dark .formulaTile p,.color-dark .formulaTile time,.color-dark .materialGrid article p,
+.color-dark .materialGrid article small,.color-dark .materialStats small,.color-dark .materialStats span,
+.color-dark .materialStats button small,.color-dark .materialStats button span,
+.color-dark .preferencesIntro p,.color-dark .preferenceHeading>span,.color-dark .pathHint,
+.color-dark .preferenceGrid label>span,.color-dark .switchLabel,.color-dark .frequencyField,
+.color-dark .securityHint,.color-dark .themeChoices>button>small,.color-dark .tagPicker>span,
+.color-dark .tagDisplay>span,.color-dark .tagDisplay small,.color-dark .tagPicker small,
+.color-dark .readerLabel,.color-dark .blendLabel{color:var(--dark-subtle)}
+
+/* Native widgets and scrollbars. */
+.color-dark{scrollbar-color:#555e6a #1b1f24}.color-dark *{scrollbar-color:#555e6a #1b1f24}
+.color-dark ::-webkit-scrollbar{width:11px;height:11px}.color-dark ::-webkit-scrollbar-track{background:#1b1f24}.color-dark ::-webkit-scrollbar-thumb{background:#505965;border:3px solid #1b1f24}
+
+/* Late-added feature views with their own hard-coded palettes. */
+.color-dark .headerStorage,.color-dark .search kbd,.color-dark .formulaTile select,
+.color-dark .cardGroup select{background:var(--dark-raised);color:#dce1e7;border-color:#48515d}
+.color-dark .sheet h4>span{background:#1d3046;color:#8fc1ff}
+.color-dark .newMaterial{background:transparent;color:var(--dark-subtle);border-color:#4a525d}
+.color-dark .blendOverview,.color-dark .blendFooter,.color-dark .blendTh,
+.color-dark .blendToolbar button,.color-dark .blendFooter button{
+  background:var(--dark-surface);color:var(--dark-text);border-color:var(--dark-border)
+}
+.color-dark .blendRow{border-color:var(--dark-border)}
+.color-dark .blendToolbar button:hover,.color-dark .blendFooter button:hover{background:var(--dark-hover);color:#91c2ff;border-color:#58708d}
+.color-dark .readerNote>header{background:var(--dark-input)!important;border-color:var(--dark-border)!important;color:var(--dark-text)}
+.color-dark .readerRow{border-color:var(--dark-border)}
+.color-dark .readerTh{background:#1f242a;color:#a9afb8}
+.color-dark .readerRow em{background:#213043;color:#a9c8e6}
+.color-dark .readerJournal p,.color-dark .readerNotes>p{color:#c8cdd4}
+.color-dark .readerSectionTitle>span,.color-dark .readerEvaluation,.color-dark .readerNotes{border-color:var(--dark-border)}
+.color-dark .changeEntry,.color-dark footer{border-color:var(--dark-border)}
+.color-dark .changeEntry.compact{background:var(--dark-surface);border-color:var(--dark-border)}
+.color-dark .changeMeta span{background:#1d3046;color:#8fc1ff}
+.color-dark .migrationBody>p,.color-dark .migrationBody>button span,
+.color-dark .changeEntry li{color:var(--dark-subtle)}
+.color-dark.platform-macos .editorHead{background:rgba(27,31,36,.94)}
+.color-dark.platform-macos .search{background:var(--dark-input)}
+.color-dark.platform-macos nav button i{background:#424954;color:#d5dae1}
+.color-dark.platform-macos .accountRow b{color:var(--dark-text)}
+.color-dark.platform-macos .accountRow,.color-dark.platform-macos .guestTools button{border-color:var(--dark-border)}
+@media(hover:hover){
+  .color-dark.platform-macos nav button:not(.active):not(:disabled):hover{background:#343b44;color:#fff}
+  .color-dark.platform-macos nav button.active:not(:disabled):hover{background:#454d58;color:#fff}
+}
+
+/* Targeted dark-mode fixes for the viewer and editor feature controls. */
+.color-dark .formulaReader{background:var(--dark-page);color:var(--dark-text)}
+.color-dark .readerHero{background:var(--dark-surface);border-color:var(--dark-border)}
+.color-dark .readerHero p,.color-dark .readerSummary span,.color-dark .readerSummary small,
+.color-dark .readerScores span,.color-dark .readerSectionTitle small,
+.color-dark .readerRow>span:first-child small,.color-dark .readerNote>header small,
+.color-dark .readerEmpty{color:var(--dark-subtle)}
+.color-dark .readerNote>header>span{color:#d9dee5}
+.color-dark .readerActions button:not(.primary){background:var(--dark-raised);color:#dce1e7;border-color:#4b5460}
+.color-dark .readerActions .readerDelete{background:#3b2327;color:#f1a4aa;border-color:#694047}
+.color-dark .readerActions .blendButton{background:#1d3046;color:#8fc1ff;border-color:#315477}
+@media(hover:hover){
+  .color-dark .readerActions button:not(.primary):not(:disabled):hover{background:var(--dark-hover);color:#fff;border-color:#607084}
+  .color-dark .readerActions .readerDelete:not(:disabled):hover{background:#4a292e;color:#ffc0c5;border-color:#87515a}
+  .color-dark .readerActions .blendButton:not(:disabled):hover{background:#263e59;color:#acd2ff;border-color:#4975a7}
+}
+
+.color-dark .toneHintToggle{background:var(--dark-raised);color:#c3c9d1;border-color:#4b5460}
+.color-dark .toneHintToggle.on{background:#1d3046;color:#8fc1ff;border-color:#315477}
+@media(hover:hover){
+  .color-dark .toneHintToggle:not(:disabled):hover{background:var(--dark-hover);color:#fff;border-color:#607084}
+  .color-dark .toneHintToggle.on:not(:disabled):hover{background:#263e59;color:#acd2ff;border-color:#4975a7}
+}
+
+.color-dark .scoreInput{background:var(--dark-input);border-color:#454d58}
+.color-dark .scoreInput button{background:transparent;color:#626b77;border:0}
+.color-dark .scoreInput button.on{color:#5ca2f6}
+.color-dark .scoreInput button:not(:disabled):hover{background:#303946;color:#9bc9ff}
+.color-dark .scoreInput button:disabled{background:transparent;color:#555d67}
+.color-dark .scoreInput button.on:disabled{color:#4b8bd7}
+
+.color-dark .vaporLookupRow>button,.color-dark .vaporLookupRow>button.lookupSettingsButton{
+  background:var(--dark-raised);color:#dce1e7;border-color:#4b5460
+}
+.color-dark .vaporLookupRow>button:first-of-type{background:#1d3046;color:#8fc1ff;border-color:#315477}
+.color-dark .vaporLookupRow>button:disabled{background:#22272e;color:#737b86;border-color:#383f48}
+@media(hover:hover){
+  .color-dark .vaporLookupRow>button:not(:disabled):hover{background:var(--dark-hover);color:#fff;border-color:#607084}
+  .color-dark .vaporLookupRow>button:first-of-type:not(:disabled):hover{background:#263e59;color:#acd2ff;border-color:#4975a7}
+}
+.color-dark .fallbackSwitch{background:var(--dark-input);color:var(--dark-text)}
+.color-dark .sourceItem>span{background:#1d3046;color:#8fc1ff}
+.color-dark .settingsHint,.color-dark .fallbackSwitch small{color:var(--dark-subtle)}
