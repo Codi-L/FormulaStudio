@@ -14,6 +14,7 @@ let cloudSyncPromise;
 
 const defaultPreferences = () => ({
   theme: process.platform === "darwin" ? "macos" : "windows",
+  colorMode: "system",
   dataDirectory: path.join(app.getPath("documents"), "Formula Studio"),
   nutstore: { enabled: false, username: "", remoteFile: "/FormulaStudio/FormulaStudio-backup.json", autoSync: true, intervalMinutes: 10, syncOnSave: true },
 });
@@ -77,6 +78,7 @@ async function writeStore(store, { sync = true, revision } = {}) {
 function publicPreferences(preferences) {
   return {
     theme: preferences.theme === "macos" ? "macos" : "windows",
+    colorMode: ["system", "light", "dark"].includes(preferences.colorMode) ? preferences.colorMode : "system",
     dataDirectory: preferences.dataDirectory,
     dataFile: path.join(preferences.dataDirectory, DATA_FILE),
     nutstore: {
@@ -287,7 +289,8 @@ app.whenReady().then(async () => {
     if (typeof next.nutstore?.password === "string" && next.nutstore.password) nutstore.password = encryptPassword(next.nutstore.password);
     delete nutstore.hasPassword;
     const theme = next.theme === "macos" ? "macos" : next.theme === "windows" ? "windows" : current.theme;
-    const saved = { theme, dataDirectory, nutstore };
+    const colorMode = ["system", "light", "dark"].includes(next.colorMode) ? next.colorMode : current.colorMode;
+    const saved = { theme, colorMode, dataDirectory, nutstore };
     await fs.mkdir(dataDirectory, { recursive: true });
     await writeJsonAtomic(preferencesPath(), saved);
     if (dataDirectory !== current.dataDirectory) await writeStore(currentStore, { sync: false });

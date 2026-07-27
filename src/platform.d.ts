@@ -2,6 +2,7 @@ import type { GuestStore } from "./domain/models";
 
 export type DesktopPreferences = {
   theme: "windows" | "macos";
+  colorMode: "system" | "light" | "dark";
   dataDirectory: string;
   dataFile: string;
   nutstore: {

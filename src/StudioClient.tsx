@@ -30,7 +30,10 @@ export default function StudioClient() {
     const [toneHints, setToneHints] = useState(true);
     const [blendOpen, setBlendOpen] = useState(false);
     const [desktopPreferences, setDesktopPreferences] = useState<DesktopPreferences | null>(null);
+    const [systemDark, setSystemDark] = useState(() => window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false);
     const platform = desktopPreferences?.theme ?? nativePlatform;
+    const colorMode = desktopPreferences?.colorMode ?? "system";
+    const resolvedColorMode = colorMode === "system" ? (systemDark ? "dark" : "light") : colorMode;
     const importRef = useRef<HTMLInputElement>(null);
     const [, setHistoryTick] = useState(0);
     const undoRef = useRef<Formula[]>([]);
@@ -63,6 +66,13 @@ export default function StudioClient() {
         loadData().catch(() => { });
         window.formulaStudio?.preferences.get().then(setDesktopPreferences).catch(() => {});
         return window.formulaStudio?.storage.onChanged(() => { loadData().catch(() => {}); });
+    }, []);
+    useEffect(() => {
+        const media = window.matchMedia("(prefers-color-scheme: dark)");
+        const updateSystemTheme = (event: MediaQueryListEvent) => setSystemDark(event.matches);
+        setSystemDark(media.matches);
+        media.addEventListener("change", updateSystemTheme);
+        return () => media.removeEventListener("change", updateSystemTheme);
     }, []);
     const formula = formulas.find(f => f.id === selected) || formulas[0];
     const update = (patch: Partial<Formula>) => { setSaved(false); setSaveError(""); setFormulas(fs => fs.map(f => f.id === formula.id ? { ...f, ...patch } : f)); };
@@ -225,7 +235,7 @@ export default function StudioClient() {
             setTab("formulas");
         } catch { alert("无法读取该备份文件，请确认它来自调香手记。"); }
     };
-    return <main className={`platform-${platform}`}>
+    return <main className={`platform-${platform} color-${resolvedColorMode}`} data-color-mode={colorMode}>
     <aside>
       <div className="brand homeBrand"><img className="brandmark brandIcon" src={platform === "macos" ? "./app-icon-macos.png" : "./app-icon.png"} alt="调香手记图标"/><div><b>调香手记</b><small>FORMULA STUDIO</small></div></div>
       <nav>

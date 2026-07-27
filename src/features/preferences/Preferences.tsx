@@ -8,6 +8,7 @@ type Props = {
 
 const emptyPreferences: DesktopPreferences = {
   theme: window.formulaStudio?.platform === "darwin" ? "macos" : "windows",
+  colorMode: "system",
   dataDirectory: "",
   dataFile: "",
   nutstore: { enabled: false, username: "", remoteFile: "/FormulaStudio/FormulaStudio-backup.json", autoSync: true, intervalMinutes: 10, syncOnSave: true, hasPassword: false, lastSyncAt: "", lastSyncError: "" },
@@ -41,7 +42,7 @@ export function Preferences({ onDataReload, onStorageChanged }: Props) {
   const save = async () => {
     setBusy(true); setStatus("正在保存…");
     try {
-      const saved = await bridge.preferences.save({ theme: preferences.theme, dataDirectory: preferences.dataDirectory, nutstore: { ...preferences.nutstore, ...(password ? { password } : {}) } });
+      const saved = await bridge.preferences.save({ theme: preferences.theme, colorMode: preferences.colorMode, dataDirectory: preferences.dataDirectory, nutstore: { ...preferences.nutstore, ...(password ? { password } : {}) } });
       setPreferences(saved); setPassword(""); onStorageChanged(saved); await onDataReload(); setStatus("偏好设置已保存。");
     } catch (error) { setStatus(error instanceof Error ? error.message : "保存失败。"); }
     finally { setBusy(false); }
@@ -59,6 +60,7 @@ export function Preferences({ onDataReload, onStorageChanged }: Props) {
     try {
       const saved = await bridge.preferences.save({
         theme: preferences.theme,
+        colorMode: preferences.colorMode,
         dataDirectory: preferences.dataDirectory,
         nutstore: { ...preferences.nutstore, ...(password ? { password } : {}) },
       });
@@ -75,6 +77,22 @@ export function Preferences({ onDataReload, onStorageChanged }: Props) {
 
   return <div className="preferencesPage">
     <div className="preferencesIntro"><span>PREFERENCES</span><h1>偏好设置</h1><p>管理本地数据位置，并通过 WebDAV 将完整数据备份同步到坚果云。</p></div>
+    <section className="preferenceCard">
+      <div className="preferenceHeading"><div><small>COLOR MODE</small><h2>明暗模式</h2></div><span>跟随电脑设置，或固定使用浅色或深色模式</span></div>
+      <div className="colorModeChoices" role="radiogroup" aria-label="明暗模式">
+        {([
+          ["system", "跟随系统", "随电脑的外观设置自动切换"],
+          ["light", "浅色模式", "始终使用明亮界面"],
+          ["dark", "深色模式", "始终使用深色界面"],
+        ] as const).map(([mode, label, description]) => <button key={mode} type="button" role="radio" aria-checked={preferences.colorMode === mode} className={preferences.colorMode === mode ? "selected" : ""} onClick={() => {
+          setPreferences(value => {
+            const next = { ...value, colorMode: mode };
+            onStorageChanged(next);
+            return next;
+          });
+        }}><span className={`colorModePreview ${mode}`} aria-hidden="true"><i/><i/></span><b>{label}</b><small>{description}</small></button>)}
+      </div>
+    </section>
     <section className="preferenceCard">
       <div className="preferenceHeading"><div><small>APPEARANCE</small><h2>界面主题</h2></div><span>选择 Windows 或 macOS 界面风格</span></div>
       <div className="themeChoices" role="radiogroup" aria-label="界面主题">
