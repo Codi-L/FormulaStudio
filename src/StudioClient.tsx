@@ -12,7 +12,7 @@ import { MaterialModal, Materials } from "./features/materials/MaterialComponent
 import { GroupModal } from "./components/modals/GroupModal";
 import { Preferences } from "./features/preferences/Preferences";
 export default function StudioClient() {
-    const platform = window.formulaStudio?.platform === "darwin" || (!window.formulaStudio && /Mac/.test(navigator.platform)) ? "macos" : "windows";
+    const nativePlatform = window.formulaStudio?.platform === "darwin" || (!window.formulaStudio && /Mac/.test(navigator.platform)) ? "macos" : "windows";
     const dataSync = (action: string, payload: unknown = {}) => syncLocalStore(action, payload);
     const [tab, setTab] = useState<"formulas" | "editor" | "materials" | "preferences">("formulas");
     const [formulas, setFormulas] = useState<Formula[]>([demoFormula]);
@@ -30,6 +30,7 @@ export default function StudioClient() {
     const [toneHints, setToneHints] = useState(true);
     const [blendOpen, setBlendOpen] = useState(false);
     const [desktopPreferences, setDesktopPreferences] = useState<DesktopPreferences | null>(null);
+    const platform = desktopPreferences?.theme ?? nativePlatform;
     const importRef = useRef<HTMLInputElement>(null);
     const [, setHistoryTick] = useState(0);
     const undoRef = useRef<Formula[]>([]);

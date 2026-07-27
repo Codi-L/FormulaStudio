@@ -1,6 +1,7 @@
 import type { GuestStore } from "./domain/models";
 
 export type DesktopPreferences = {
+  theme: "windows" | "macos";
   dataDirectory: string;
   dataFile: string;
   nutstore: {

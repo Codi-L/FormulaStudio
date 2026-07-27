@@ -7,6 +7,7 @@ type Props = {
 };
 
 const emptyPreferences: DesktopPreferences = {
+  theme: window.formulaStudio?.platform === "darwin" ? "macos" : "windows",
   dataDirectory: "",
   dataFile: "",
   nutstore: { enabled: false, username: "", remoteFile: "/FormulaStudio/FormulaStudio-backup.json", autoSync: true, intervalMinutes: 10, syncOnSave: true, hasPassword: false, lastSyncAt: "", lastSyncError: "" },
@@ -30,10 +31,17 @@ export function Preferences({ onDataReload, onStorageChanged }: Props) {
     const selected = await bridge.preferences.chooseDirectory();
     if (selected) setPreferences(value => ({ ...value, dataDirectory: selected }));
   };
+  const selectTheme = (theme: DesktopPreferences["theme"]) => {
+    setPreferences(value => {
+      const next = { ...value, theme };
+      onStorageChanged(next);
+      return next;
+    });
+  };
   const save = async () => {
     setBusy(true); setStatus("正在保存…");
     try {
-      const saved = await bridge.preferences.save({ dataDirectory: preferences.dataDirectory, nutstore: { ...preferences.nutstore, ...(password ? { password } : {}) } });
+      const saved = await bridge.preferences.save({ theme: preferences.theme, dataDirectory: preferences.dataDirectory, nutstore: { ...preferences.nutstore, ...(password ? { password } : {}) } });
       setPreferences(saved); setPassword(""); onStorageChanged(saved); await onDataReload(); setStatus("偏好设置已保存。");
     } catch (error) { setStatus(error instanceof Error ? error.message : "保存失败。"); }
     finally { setBusy(false); }
@@ -50,6 +58,7 @@ export function Preferences({ onDataReload, onStorageChanged }: Props) {
     setBusy(true); setStatus("正在同步…");
     try {
       const saved = await bridge.preferences.save({
+        theme: preferences.theme,
         dataDirectory: preferences.dataDirectory,
         nutstore: { ...preferences.nutstore, ...(password ? { password } : {}) },
       });
@@ -66,6 +75,13 @@ export function Preferences({ onDataReload, onStorageChanged }: Props) {
 
   return <div className="preferencesPage">
     <div className="preferencesIntro"><span>PREFERENCES</span><h1>偏好设置</h1><p>管理本地数据位置，并通过 WebDAV 将完整数据备份同步到坚果云。</p></div>
+    <section className="preferenceCard">
+      <div className="preferenceHeading"><div><small>APPEARANCE</small><h2>界面主题</h2></div><span>选择 Windows 或 macOS 界面风格</span></div>
+      <div className="themeChoices" role="radiogroup" aria-label="界面主题">
+        <button type="button" role="radio" aria-checked={preferences.theme === "windows"} className={preferences.theme === "windows" ? "selected" : ""} onClick={() => selectTheme("windows")}><span className="windowsPreview"><i/><i/><i/></span><b>Windows</b><small>清晰边框与紧凑布局</small></button>
+        <button type="button" role="radio" aria-checked={preferences.theme === "macos"} className={preferences.theme === "macos" ? "selected" : ""} onClick={() => selectTheme("macos")}><span className="macosPreview"><i/><i/><i/></span><b>macOS</b><small>柔和材质与圆角控件</small></button>
+      </div>
+    </section>
     <section className="preferenceCard">
       <div className="preferenceHeading"><div><small>LOCAL STORAGE</small><h2>本地数据路径</h2></div><span>数据迁移时会保留当前内容</span></div>
       <label className="pathField"><input readOnly value={preferences.dataDirectory}/><button onClick={chooseDirectory} disabled={busy}>选择文件夹</button></label>

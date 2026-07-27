@@ -13,6 +13,7 @@ let autoSyncTimer;
 let cloudSyncPromise;
 
 const defaultPreferences = () => ({
+  theme: process.platform === "darwin" ? "macos" : "windows",
   dataDirectory: path.join(app.getPath("documents"), "Formula Studio"),
   nutstore: { enabled: false, username: "", remoteFile: "/FormulaStudio/FormulaStudio-backup.json", autoSync: true, intervalMinutes: 10, syncOnSave: true },
 });
@@ -75,6 +76,7 @@ async function writeStore(store, { sync = true, revision } = {}) {
 
 function publicPreferences(preferences) {
   return {
+    theme: preferences.theme === "macos" ? "macos" : "windows",
     dataDirectory: preferences.dataDirectory,
     dataFile: path.join(preferences.dataDirectory, DATA_FILE),
     nutstore: {
@@ -284,7 +286,8 @@ app.whenReady().then(async () => {
     const nutstore = { ...current.nutstore, ...next.nutstore };
     if (typeof next.nutstore?.password === "string" && next.nutstore.password) nutstore.password = encryptPassword(next.nutstore.password);
     delete nutstore.hasPassword;
-    const saved = { dataDirectory, nutstore };
+    const theme = next.theme === "macos" ? "macos" : next.theme === "windows" ? "windows" : current.theme;
+    const saved = { theme, dataDirectory, nutstore };
     await fs.mkdir(dataDirectory, { recursive: true });
     await writeJsonAtomic(preferencesPath(), saved);
     if (dataDirectory !== current.dataDirectory) await writeStore(currentStore, { sync: false });
