@@ -33,8 +33,8 @@
     "appId": "studio.formula.desktop",
     "productName": "调香手记",
     "directories": { "output": "release" },
-    "files": ["dist/**/*", "electron/**/*", "package.json"],
-    "win": { "icon": "public/app-icon.png" },
+    "files": ["dist/**/*", "electron/**/*", "public/app-icon*", "package.json"],
+    "win": { "icon": "public/app-icon.ico" },
     "mac": {
       "icon": "public/app-icon-macos.png",
       "category": "public.app-category.productivity",

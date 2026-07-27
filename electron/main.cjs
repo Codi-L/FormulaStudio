@@ -237,9 +237,10 @@ function notifyStorageChanged() {
 
 function createWindow() {
   const isMac = process.platform === "darwin";
+  const iconFile = process.platform === "win32" ? "app-icon.ico" : isMac ? "app-icon-macos.png" : "app-icon.png";
   const window = new BrowserWindow({
     width: 1440, height: 920, minWidth: 1050, minHeight: 680, title: "调香手记",
-    icon: path.join(__dirname, isMac ? "../public/app-icon-macos.png" : "../public/app-icon.png"),
+    icon: path.join(__dirname, `../public/${iconFile}`),
     backgroundColor: isMac ? "#00000000" : "#f5f6f8", autoHideMenuBar: true,
     ...(isMac ? { titleBarStyle: "hiddenInset", trafficLightPosition: { x: 18, y: 18 }, vibrancy: "sidebar", visualEffectState: "active" } : {}),
     webPreferences: { preload: path.join(__dirname, "preload.cjs"), contextIsolation: true, nodeIntegration: false, sandbox: true },
@@ -247,6 +248,8 @@ function createWindow() {
   window.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:\/\//i.test(url)) shell.openExternal(url); return { action: "deny" }; });
   if (isDev) window.loadURL("http://127.0.0.1:5173"); else window.loadFile(path.join(__dirname, "../dist/index.html"));
 }
+
+if (process.platform === "win32") app.setAppUserModelId("studio.formula.desktop");
 
 app.whenReady().then(async () => {
   ipcMain.handle("storage:list", () => readStore());
