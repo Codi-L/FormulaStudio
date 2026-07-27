@@ -1,6 +1,6 @@
 {
   "name": "formula-studio",
-  "version": "0.1.0",
+  "version": "1.0.0-Alpha.1",
   "private": true,
   "description": "调香手记 Windows 本地桌面版",
   "main": "electron/main.cjs",
