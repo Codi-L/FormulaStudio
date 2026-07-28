@@ -2,6 +2,7 @@
 
 Status: normative interoperability contract  
 Format version: `1`  
+Reviewed application release: `v1.0.0-Alpha.1`
 Canonical application name: `调香手记`
 
 ## 1. Purpose
@@ -63,7 +64,7 @@ An array of formula records. Each record has these fields:
 | --- | --- | --- | --- |
 | `id` | string | yes | Non-empty and unique among formulas. |
 | `name` | string | yes | Formula display name. |
-| `version` | string | yes | Version label, currently normally semantic-version-like, such as `2.1.0`. |
+| `version` | string | yes | Formula version in `MAJOR.MINOR.PATCH` form, matching `^\d+\.\d+\.\d+$`, such as `2.1.0`. This is independent of both the application release version and the backup format version. |
 | `created` | string | yes | Date string, normally `YYYY-MM-DD`. |
 | `measure` | string | yes | Exactly `mass` or `volume`. |
 | `concentration` | number | yes | Finite number. |
@@ -323,8 +324,8 @@ Import MUST preserve empty arrays. It MUST NOT silently replace an intentionally
 
 | Operation | Required |
 | --- | --- |
-| Desktop v1 export -> Site import | yes |
-| Site v1 export -> desktop current import | yes |
+| Desktop `v1.0.0-Alpha.1` format v1 export -> Site import | yes |
+| Site format v1 export -> desktop `v1.0.0-Alpha.1` import | yes |
 | Legacy raw-store JSON -> Site import | yes |
 | Site export without envelope | no; new exports MUST use the envelope |
 | Import a future envelope version greater than 1 | reject without changing data |
@@ -349,4 +350,4 @@ A Site export/import implementation is complete only when these tests pass:
 
 ## 11. Source of truth
 
-For format version 1, this document is the cross-platform interchange contract. TypeScript types may be generated from it, but desktop and Site implementations MUST not independently invent field names or change field types. Any breaking format change requires a new integer `version` and a documented migration path.
+For backup format version 1, as reviewed against application release `v1.0.0-Alpha.1`, this document is the cross-platform interchange contract. The application release version and backup format version evolve independently. TypeScript types may be generated from this document, but desktop and Site implementations MUST not independently invent field names or change field types. Any breaking backup-format change requires a new integer `version` and a documented migration path.
